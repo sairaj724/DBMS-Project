@@ -5,6 +5,8 @@ import scholarshipRoutes from './routes/scholarships.js';
 import applicationRoutes from './routes/applications.js';
 import notificationRoutes from './routes/notifications.js';
 import documentRoutes from './routes/documents.js';
+import studentRoutes from './routes/students.js';
+import userRoutes from './routes/users.js';
 
 dotenv.config();
 
@@ -19,6 +21,8 @@ app.use('/api/scholarships', scholarshipRoutes);
 app.use('/api/applications', applicationRoutes);
 app.use('/api/notifications', notificationRoutes);
 app.use('/api/documents', documentRoutes);
+app.use('/api/students', studentRoutes);
+app.use('/api/users', userRoutes);
 
 // Health check
 app.get('/api/health', (req, res) => {

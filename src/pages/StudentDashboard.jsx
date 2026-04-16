@@ -1,3 +1,4 @@
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   Award,
@@ -10,13 +11,79 @@ import {
   ArrowRight,
   BookOpen,
   DollarSign,
+  Loader2,
 } from "lucide-react";
-import { scholarships, applications } from "../data/dummyData";
+import { apiService } from "../services/api";
 import StatusTracker from "../components/StatusTracker";
 import "../styles/StudentDashboard.css";
 
 function StudentDashboard({ user }) {
   const navigate = useNavigate();
+  const [scholarships, setScholarships] = useState([]);
+  const [applications, setApplications] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  // Fetch scholarships and applications
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        setLoading(true);
+        const [scholarshipsRes, applicationsRes] = await Promise.all([
+          apiService.getScholarships(),
+          user?.user_id ? apiService.getApplications() : Promise.resolve({ data: [] })
+        ]);
+
+        if (scholarshipsRes.success) {
+          // Transform scholarships to match frontend format
+          const transformedScholarships = scholarshipsRes.data.map(s => ({
+            id: s.scholarship_id,
+            name: s.name,
+            description: s.description,
+            provider: "VJTI Trust",
+            amount: s.amount,
+            deadline: s.deadline,
+            category: s.category || "General",
+            status: s.is_active ? "Active" : "Inactive",
+            eligibility: {
+              minCgpa: s.min_cgpa || 0,
+              maxIncome: s.max_income || 10000000,
+              caste: s.category === "ALL" ? ["All"] : s.category ? [s.category] : ["All"],
+              departments: ["All"],
+              year: [1, 2, 3, 4],
+              gender: s.gender || "all"
+            }
+          }));
+          setScholarships(transformedScholarships);
+        }
+
+        if (applicationsRes.success) {
+          // Transform applications to match frontend format
+          const userApplications = applicationsRes.data.filter(app => app.student_id === user?.user_id);
+          const transformedApps = userApplications.map(app => ({
+            id: app.application_id,
+            scholarshipId: app.scholarship_id,
+            studentId: app.student_id,
+            status: app.status === 'pending' ? 'Under Review' : 
+                    app.status === 'approved' ? 'Approved' :
+                    app.status === 'rejected' ? 'Rejected' : 'Pending Issues',
+            appliedDate: app.applied_date,
+            timeline: [
+              { date: app.applied_date, status: "Applied", description: "Application submitted" },
+              { date: app.updated_at, status: app.status, description: `Status: ${app.status}` }
+            ]
+          }));
+          setApplications(transformedApps);
+        }
+      } catch (err) {
+        setError(err.message);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchData();
+  }, [user?.user_id]);
 
   // Calculate stats
   const totalApplied = applications.length;
@@ -33,9 +100,9 @@ function StudentDashboard({ user }) {
   // Get eligible scholarships count
   const eligibleScholarships = scholarships.filter((s) => {
     return (
-      user.cgpa >= s.eligibility.minCgpa &&
-      user.income <= s.eligibility.maxIncome &&
-      (s.eligibility.caste.includes(user.caste) || s.eligibility.caste.includes("All"))
+      user?.cgpa >= s.eligibility.minCgpa &&
+      user?.income <= s.eligibility.maxIncome &&
+      (s.eligibility.caste.includes(user?.caste) || s.eligibility.caste.includes("All"))
     );
   }).length;
 
@@ -48,6 +115,17 @@ function StudentDashboard({ user }) {
       return diffDays > 0 && diffDays <= 30;
     })
     .slice(0, 3);
+
+  if (loading) {
+    return (
+      <div className="dashboard-page">
+        <div className="loading-state">
+          <Loader2 className="loading-icon" />
+          <p>Loading your dashboard...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="dashboard-page">

@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   Search,
@@ -10,13 +10,17 @@ import {
   SlidersHorizontal,
   X,
   CheckCircle,
+  Loader2,
 } from "lucide-react";
-import { scholarships } from "../data/dummyData";
+import { apiService } from "../services/api";
 import EligibilityBadge from "../components/EligibilityBadge";
 import "../styles/ScholarshipList.css";
 
 function ScholarshipList({ user }) {
   const navigate = useNavigate();
+  const [scholarships, setScholarships] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [showFilters, setShowFilters] = useState(false);
   const [filters, setFilters] = useState({
@@ -25,6 +29,46 @@ function ScholarshipList({ user }) {
     caste: user?.caste || "all",
     eligibility: "all",
   });
+
+  // Fetch scholarships from API
+  useEffect(() => {
+    const fetchScholarships = async () => {
+      try {
+        setLoading(true);
+        const response = await apiService.getScholarships();
+        if (response.success) {
+          // Transform data to match frontend format
+          const transformed = response.data.map(s => ({
+            id: s.scholarship_id,
+            name: s.name,
+            description: s.description,
+            provider: "VJTI Trust",
+            amount: s.amount,
+            deadline: s.deadline,
+            category: s.category || "General",
+            status: s.is_active ? "Active" : "Inactive",
+            eligibility: {
+              minCgpa: s.min_cgpa || 0,
+              maxIncome: s.max_income || 10000000,
+              caste: s.category === "ALL" ? ["All"] : s.category ? [s.category] : ["All"],
+              departments: ["All"],
+              year: [1, 2, 3, 4],
+              gender: s.gender || "all"
+            }
+          }));
+          setScholarships(transformed);
+        } else {
+          setError("Failed to fetch scholarships");
+        }
+      } catch (err) {
+        setError(err.message || "Error loading scholarships");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchScholarships();
+  }, []);
 
   // Check eligibility for a scholarship
   const checkEligibility = (scholarship) => {
@@ -227,15 +271,35 @@ function ScholarshipList({ user }) {
               <X className="btn-icon" />
               Clear All Filters
             </button>
-            <span className="results-count">
-              Showing {filteredScholarships.length} of {scholarships.length} scholarships
-            </span>
+            {!loading && (
+              <span className="results-count">
+                Showing {filteredScholarships.length} of {scholarships.length} scholarships
+              </span>
+            )}
           </div>
         </div>
       )}
 
+      {/* Loading State */}
+      {loading && (
+        <div className="loading-container">
+          <Loader2 className="loading-spinner" />
+          <p>Loading scholarships...</p>
+        </div>
+      )}
+
+      {/* Error State */}
+      {error && !loading && (
+        <div className="error-container">
+          <p className="error-message">{error}</p>
+          <button className="retry-btn" onClick={() => window.location.reload()}>
+            Retry
+          </button>
+        </div>
+      )}
+
       {/* Results Count */}
-      {!showFilters && (
+      {!loading && !error && !showFilters && (
         <div className="results-bar">
           <span className="results-text">
             Showing <strong>{filteredScholarships.length}</strong> scholarships
@@ -250,8 +314,9 @@ function ScholarshipList({ user }) {
       )}
 
       {/* Scholarships Grid */}
-      <div className="scholarships-grid">
-        {filteredScholarships.map((scholarship) => {
+      {!loading && !error && (
+        <div className="scholarships-grid">
+          {filteredScholarships.map((scholarship) => {
           const eligibility = checkEligibility(scholarship);
           const daysLeft = getDaysLeft(scholarship.deadline);
 
@@ -329,10 +394,11 @@ function ScholarshipList({ user }) {
             </div>
           );
         })}
-      </div>
+        </div>
+      )}
 
       {/* Empty State */}
-      {filteredScholarships.length === 0 && (
+      {!loading && !error && filteredScholarships.length === 0 && (
         <div className="empty-state">
           <Award className="empty-icon" />
           <h3>No scholarships found</h3>

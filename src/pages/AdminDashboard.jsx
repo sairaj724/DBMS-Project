@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   Users,
@@ -11,58 +11,122 @@ import {
   AlertCircle,
   ChevronRight,
   BarChart3,
-  MoreVertical,
+  Loader2,
 } from "lucide-react";
-import { adminStats, scholarships, applications, allStudents } from "../data/dummyData";
+import { apiService } from "../services/api";
 import "../styles/AdminDashboard.css";
 
 function AdminDashboard({ admin }) {
   const navigate = useNavigate();
   const [timeRange, setTimeRange] = useState("month");
+  const [stats, setStats] = useState({
+    totalScholarships: 0,
+    activeApplications: 0,
+    approvedCount: 0,
+    pendingCount: 0,
+    totalDisbursed: 0,
+  });
+  const [scholarships, setScholarships] = useState([]);
+  const [applications, setApplications] = useState([]);
+  const [recentApps, setRecentApps] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  // Fetch dashboard data
+  useEffect(() => {
+    const fetchDashboardData = async () => {
+      try {
+        setLoading(true);
+        const [scholarshipsRes, applicationsRes] = await Promise.all([
+          apiService.getScholarships(),
+          apiService.getApplications()
+        ]);
+
+        if (scholarshipsRes.success) {
+          setScholarships(scholarshipsRes.data || []);
+        }
+
+        if (applicationsRes.success) {
+          const apps = applicationsRes.data || [];
+          setApplications(apps);
+          
+          // Calculate stats
+          const approvedApps = apps.filter(a => a.status === 'approved');
+          const pendingApps = apps.filter(a => a.status === 'pending');
+          const totalAmount = approvedApps.reduce((sum, a) => sum + (a.scholarships?.amount || 0), 0);
+          
+          setStats({
+            totalScholarships: scholarshipsRes.data?.length || 0,
+            activeApplications: apps.length,
+            approvedCount: approvedApps.length,
+            pendingCount: pendingApps.length,
+            totalDisbursed: totalAmount,
+          });
+
+          // Get recent applications (last 5)
+          const recent = apps.slice(0, 5).map(app => ({
+            id: app.application_id?.slice(0, 8) || 'N/A',
+            student: app.student_profile?.users?.name || 'Unknown',
+            scholarship: app.scholarships?.name || 'Unknown',
+            date: new Date(app.applied_date).toLocaleDateString(),
+            status: app.status === 'pending' ? 'Under Review' :
+                    app.status === 'approved' ? 'Approved' :
+                    app.status === 'rejected' ? 'Rejected' : 'Pending Issues'
+          }));
+          setRecentApps(recent);
+        }
+      } catch (err) {
+        console.error("Error fetching dashboard data:", err);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchDashboardData();
+  }, []);
 
   // Calculate dynamic stats
-  const stats = [
+  const dashboardStats = [
     {
       title: "Total Scholarships",
-      value: adminStats.totalScholarships,
+      value: stats.totalScholarships,
       icon: Award,
       color: "blue",
-      change: "+2 this month",
+      change: "Available programs",
     },
     {
       title: "Active Applications",
-      value: adminStats.activeApplications,
+      value: stats.activeApplications,
       icon: FileText,
       color: "green",
-      change: "+45 this week",
+      change: "All time",
     },
     {
-      title: "Approved (This Month)",
-      value: adminStats.approvedThisMonth,
+      title: "Approved",
+      value: stats.approvedCount,
       icon: CheckCircle,
       color: "purple",
-      change: "+12 from last month",
+      change: "Total approved",
     },
     {
       title: "Pending Review",
-      value: adminStats.pendingReview,
+      value: stats.pendingCount,
       icon: Clock,
       color: "yellow",
       change: "Requires attention",
     },
     {
-      title: "Issues Reported",
-      value: adminStats.issuesReported,
-      icon: AlertCircle,
+      title: "Total Students",
+      value: "-",
+      icon: Users,
       color: "red",
-      change: "5 new today",
+      change: "Registered",
     },
     {
       title: "Amount Disbursed",
-      value: `₹${(adminStats.totalDisbursed / 100000).toFixed(2)}L`,
+      value: `₹${(stats.totalDisbursed / 100000).toFixed(2)}L`,
       icon: DollarSign,
       color: "teal",
-      change: "+₹3.2L this month",
+      change: "Total approved amount",
     },
   ];
 
@@ -89,7 +153,7 @@ function AdminDashboard({ admin }) {
     },
     {
       title: "Review Applications",
-      description: `${adminStats.pendingReview} applications pending review`,
+      description: `${stats.pendingCount} applications pending review`,
       icon: FileText,
       action: () => navigate("/admin/applications"),
       color: "green",
@@ -121,27 +185,38 @@ function AdminDashboard({ admin }) {
         </div>
       </div>
 
-      {/* Stats Grid */}
-      <div className="admin-stats-grid">
-        {stats.map((stat, index) => {
-          const Icon = stat.icon;
-          return (
-            <div key={index} className={`stat-card ${stat.color}`}>
-              <div className="stat-icon-wrapper">
-                <Icon className="stat-icon" />
-              </div>
-              <div className="stat-content">
-                <span className="stat-value">{stat.value}</span>
-                <span className="stat-title">{stat.title}</span>
-                <span className="stat-change">{stat.change}</span>
-              </div>
-            </div>
-          );
-        })}
-      </div>
+      {/* Loading State */}
+      {loading && (
+        <div className="loading-state">
+          <Loader2 className="loading-icon" />
+          <p>Loading dashboard...</p>
+        </div>
+      )}
 
-      {/* Quick Actions */}
-      <div className="quick-actions-section">
+      {/* Content when not loading */}
+      {!loading && (
+        <>
+          {/* Stats Grid */}
+          <div className="admin-stats-grid">
+            {dashboardStats.map((stat, index) => {
+              const Icon = stat.icon;
+              return (
+                <div key={index} className={`stat-card ${stat.color}`}>
+                  <div className="stat-icon-wrapper">
+                    <Icon className="stat-icon" />
+                  </div>
+                  <div className="stat-content">
+                    <span className="stat-value">{stat.value}</span>
+                    <span className="stat-title">{stat.title}</span>
+                    <span className="stat-change">{stat.change}</span>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+
+          {/* Quick Actions */}
+          <div className="quick-actions-section">
         <h3>Quick Actions</h3>
         <div className="quick-actions-grid">
           {quickActions.map((action, index) => {
@@ -189,7 +264,7 @@ function AdminDashboard({ admin }) {
                   </tr>
                 </thead>
                 <tbody>
-                  {adminStats.recentApplications.map((app) => (
+                  {recentApps.map((app) => (
                     <tr key={app.id}>
                       <td className="app-id">{app.id}</td>
                       <td className="student-name">{app.student}</td>
@@ -329,6 +404,8 @@ function AdminDashboard({ admin }) {
           </div>
         </div>
       </div>
+        </>
+      )}
     </div>
   );
 }

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   FileText,
@@ -12,8 +12,9 @@ import {
   Eye,
   Calendar,
   DollarSign,
+  Loader2,
 } from "lucide-react";
-import { scholarships, applications } from "../data/dummyData";
+import { apiService } from "../services/api";
 import StatusTracker from "../components/StatusTracker";
 import "../styles/Applications.css";
 
@@ -22,6 +23,60 @@ function Applications({ user }) {
   const [filter, setFilter] = useState("all");
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedApp, setSelectedApp] = useState(null);
+  const [scholarships, setScholarships] = useState([]);
+  const [applications, setApplications] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  // Fetch data from API
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        setLoading(true);
+        const [scholarshipsRes, applicationsRes] = await Promise.all([
+          apiService.getScholarships(),
+          apiService.getApplications()
+        ]);
+
+        if (scholarshipsRes.success) {
+          const transformedScholarships = scholarshipsRes.data.map(s => ({
+            id: s.scholarship_id,
+            name: s.name,
+            provider: "VJTI Trust",
+            amount: s.amount,
+          }));
+          setScholarships(transformedScholarships);
+        }
+
+        if (applicationsRes.success) {
+          // Transform applications to match frontend format
+          const userApplications = applicationsRes.data.filter(app => app.student_id === user?.user_id);
+          const transformedApps = userApplications.map(app => ({
+            id: app.application_id,
+            scholarshipId: app.scholarship_id,
+            studentId: app.student_id,
+            status: app.status === 'pending' ? 'Under Review' : 
+                    app.status === 'approved' ? 'Approved' :
+                    app.status === 'rejected' ? 'Rejected' : 'Pending Issues',
+            appliedDate: app.applied_date,
+            lastUpdated: app.updated_at,
+            remarks: app.admin_notes,
+            timeline: [
+              { date: app.applied_date, status: "Applied", description: "Application submitted" },
+              { date: app.updated_at, status: app.status, description: `Status: ${app.status}` }
+            ]
+          }));
+          setApplications(transformedApps);
+        }
+      } catch (err) {
+        setError(err.message);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchData();
+  }, [user?.user_id]);
 
   // Filter applications
   const filteredApplications = applications.filter((app) => {
@@ -40,15 +95,15 @@ function Applications({ user }) {
       if (!matchName && !matchId) return false;
     }
 
-    return app.studentId === user?.id;
+    return true;
   });
 
   // Stats
   const stats = {
-    total: applications.filter((a) => a.studentId === user?.id).length,
-    approved: applications.filter((a) => a.studentId === user?.id && a.status === "Approved").length,
-    underReview: applications.filter((a) => a.studentId === user?.id && a.status === "Under Review").length,
-    pendingIssues: applications.filter((a) => a.studentId === user?.id && a.status === "Pending Issues").length,
+    total: applications.length,
+    approved: applications.filter((a) => a.status === "Approved").length,
+    underReview: applications.filter((a) => a.status === "Under Review").length,
+    pendingIssues: applications.filter((a) => a.status === "Pending Issues").length,
   };
 
   const getStatusIcon = (status) => {
@@ -78,7 +133,25 @@ function Applications({ user }) {
         <p>Track and manage your scholarship applications</p>
       </div>
 
-      {/* Stats Cards */}
+      {/* Loading State */}
+      {loading && (
+        <div className="loading-state">
+          <Loader2 className="loading-icon" />
+          <p>Loading applications...</p>
+        </div>
+      )}
+
+      {/* Error State */}
+      {error && !loading && (
+        <div className="error-state">
+          <p>{error}</p>
+          <button onClick={() => window.location.reload()}>Retry</button>
+        </div>
+      )}
+
+      {!loading && !error && (
+        <>
+          {/* Stats Cards */}
       <div className="stats-row">
         <div className="stat-card total">
           <FileText className="stat-icon" />
@@ -301,6 +374,8 @@ function Applications({ user }) {
             </div>
           </div>
         </div>
+      )}
+        </>
       )}
     </div>
   );

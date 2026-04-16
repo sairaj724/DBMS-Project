@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { GraduationCap, Eye, EyeOff } from "lucide-react";
+import { apiService } from "../services/api";
 import "../styles/Auth.css";
 
 function Login({ onLogin }) {
@@ -29,9 +30,6 @@ function Login({ onLogin }) {
     setLoading(true);
     setError("");
 
-    // Simulate API call
-    await new Promise((resolve) => setTimeout(resolve, 1000));
-
     // Simple validation
     if (!formData.email || !formData.password) {
       setError("Please fill in all fields");
@@ -39,46 +37,55 @@ function Login({ onLogin }) {
       return;
     }
 
-    // Demo login logic - any email/password works for now
-    if (isAdmin) {
-      // Any email can be used for admin - just create admin user from email
-      const adminUserFromEmail = {
-        id: "ADM001",
-        name: formData.email.split('@')[0],
-        email: formData.email,
-        role: "Scholarship Coordinator",
-      };
-      onLogin(adminUserFromEmail, true);
-      navigate("/admin");
-    } else {
-      // Student login - any email works for demo
-      const studentUserFromEmail = {
-        id: "STU2024001",
-        name: formData.email.split('@')[0],
-        email: formData.email,
-        phone: "+91 9876543210",
-        rollNumber: "201070001",
-        department: "Computer Engineering",
-        year: 3,
-        cgpa: 8.5,
-        income: 250000,
-        caste: "OBC",
-        gender: "Male",
-        dob: "2002-05-15",
-        address: "123, Mumbai Central, Mumbai - 400008",
-        documents: {
-          incomeCertificate: true,
-          casteCertificate: true,
-          marksheet: true,
-          bonafide: true,
-          bankPassbook: false,
-        },
-      };
-      onLogin(studentUserFromEmail, false);
-      navigate("/dashboard");
-    }
+    try {
+      if (isSignup) {
+        // Sign up - Register new user
+        if (!formData.name) {
+          setError("Please enter your name");
+          setLoading(false);
+          return;
+        }
 
-    setLoading(false);
+        const userData = {
+          name: formData.name,
+          email: formData.email,
+          password: formData.password,
+          role: isAdmin ? 'admin' : 'student'
+        };
+
+        const response = await apiService.registerUser(userData);
+        
+        if (response.success) {
+          // Auto login after signup
+          const loginResponse = await apiService.loginUser({
+            email: formData.email,
+            password: formData.password
+          });
+          
+          if (loginResponse.success) {
+            onLogin(loginResponse.data, isAdmin);
+            navigate(isAdmin ? "/admin" : "/dashboard");
+          }
+        }
+      } else {
+        // Login - Authenticate user
+        const credentials = {
+          email: formData.email,
+          password: formData.password
+        };
+
+        const response = await apiService.loginUser(credentials);
+        
+        if (response.success) {
+          onLogin(response.data, response.data.role === 'admin');
+          navigate(response.data.role === 'admin' ? "/admin" : "/dashboard");
+        }
+      }
+    } catch (err) {
+      setError(err.message || "Authentication failed. Please try again.");
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -244,10 +251,10 @@ function Login({ onLogin }) {
               </p>
             </div>
 
-            {/* Demo Credentials */}
+            {/* Info */}
             <div className="demo-credentials">
-              <p><strong>Demo Mode:</strong></p>
-              <p>Any email and password will work for login</p>
+              <p><strong>Note:</strong></p>
+              <p>Sign up to create a new account or login with existing credentials</p>
             </div>
           </div>
         </div>

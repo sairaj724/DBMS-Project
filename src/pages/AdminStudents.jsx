@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   Search,
   Filter,
@@ -16,20 +16,50 @@ import {
   MapPin,
   DollarSign,
   Star,
+  Loader2,
 } from "lucide-react";
-import { allStudents, scholarships, applications } from "../data/dummyData";
+import { apiService } from "../services/api";
 import "../styles/AdminStudents.css";
 
 function AdminStudents() {
   const [searchQuery, setSearchQuery] = useState("");
   const [deptFilter, setDeptFilter] = useState("all");
   const [selectedStudent, setSelectedStudent] = useState(null);
+  const [students, setStudents] = useState([]);
+  const [scholarships, setScholarships] = useState([]);
+  const [applications, setApplications] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  // Fetch students from database
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        setLoading(true);
+        const [studentsRes, scholarshipsRes, applicationsRes] = await Promise.all([
+          apiService.getStudents(),
+          apiService.getScholarships(),
+          apiService.getApplications(),
+        ]);
+        setStudents(studentsRes.data || []);
+        setScholarships(scholarshipsRes.data || []);
+        setApplications(applicationsRes.data || []);
+      } catch (err) {
+        setError(err.message || "Failed to fetch students");
+        console.error("Error fetching data:", err);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchData();
+  }, []);
 
   // Get departments list
-  const departments = ["all", ...new Set(allStudents.map((s) => s.department))];
+  const departments = ["all", ...new Set(students.map((s) => s.department))];
 
   // Filter students
-  const filteredStudents = allStudents.filter((student) => {
+  const filteredStudents = students.filter((student) => {
     if (searchQuery) {
       const query = searchQuery.toLowerCase();
       const matchName = student.name.toLowerCase().includes(query);
@@ -46,20 +76,17 @@ function AdminStudents() {
   // Get student applications
   const getStudentApplications = (studentId) => {
     return applications
-      .filter((app) => app.studentId === studentId)
+      .filter((app) => app.student_id === studentId)
       .map((app) => ({
         ...app,
-        scholarship: scholarships.find((s) => s.id === app.scholarshipId),
+        scholarship: scholarships.find((s) => s.scholarship_id === app.scholarship_id),
       }));
   };
 
   // Get eligible scholarships for student
   const getEligibleScholarships = (student) => {
     return scholarships.filter((s) => {
-      return (
-        student.cgpa >= s.eligibility.minCgpa &&
-        s.eligibility.year.includes(student.year)
-      );
+      return student.cgpa >= (s.min_cgpa || 0);
     });
   };
 
@@ -73,6 +100,44 @@ function AdminStudents() {
     };
     return <span className={`status-badge ${styles[status] || "applied"}`}>{status}</span>;
   };
+
+  // Show loading state
+  if (loading) {
+    return (
+      <div className="admin-students-page">
+        <div className="page-header">
+          <div>
+            <h1>Student Database</h1>
+            <p>Loading student records...</p>
+          </div>
+        </div>
+        <div className="loading-container">
+          <Loader2 className="loading-spinner" />
+          <p>Loading students...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Show error state
+  if (error) {
+    return (
+      <div className="admin-students-page">
+        <div className="page-header">
+          <div>
+            <h1>Student Database</h1>
+            <p>Error loading student records</p>
+          </div>
+        </div>
+        <div className="error-container">
+          <p className="error-message">Error: {error}</p>
+          <button className="retry-btn" onClick={() => window.location.reload()}>
+            Retry
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="admin-students-page">
@@ -266,7 +331,7 @@ function AdminStudents() {
                   <Phone className="info-icon" />
                   <div>
                     <span className="label">Phone</span>
-                    <span className="value">+91 9876543210</span>
+                    <span className="value">{selectedStudent.phone_number || 'N/A'}</span>
                   </div>
                 </div>
               </div>
@@ -284,7 +349,7 @@ function AdminStudents() {
                         <div className="app-info">
                           <span className="app-name">{app.scholarship?.name}</span>
                           <span className="app-date">
-                            Applied: {new Date(app.appliedDate).toLocaleDateString()}
+                            Applied: {new Date(app.applied_date).toLocaleDateString()}
                           </span>
                         </div>
                         <div className="app-meta">
@@ -310,10 +375,9 @@ function AdminStudents() {
                 {getEligibleScholarships(selectedStudent).length > 0 ? (
                   <div className="scholarships-mini-list">
                     {getEligibleScholarships(selectedStudent).slice(0, 5).map((scholarship) => (
-                      <div key={scholarship.id} className="mini-scholarship-item">
+                      <div key={scholarship.scholarship_id} className="mini-scholarship-item">
                         <div className="scholarship-info">
                           <span className="scholarship-name">{scholarship.name}</span>
-                          <span className="scholarship-provider">{scholarship.provider}</span>
                         </div>
                         <span className="scholarship-amount">
                           ₹{scholarship.amount.toLocaleString()}
