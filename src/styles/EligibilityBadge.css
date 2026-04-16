@@ -1,0 +1,46 @@
+/* Eligibility Badge Styles */
+.eligibility-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+  padding: 0.375rem 0.75rem;
+  border-radius: 9999px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.badge-icon {
+  width: 0.875rem;
+  height: 0.875rem;
+}
+
+/* Eligible Status */
+.eligibility-badge.eligible {
+  background: #d1fae5;
+  color: #059669;
+}
+
+.eligibility-badge.eligible .badge-icon {
+  color: #059669;
+}
+
+/* Not Eligible Status */
+.eligibility-badge.not-eligible {
+  background: #fee2e2;
+  color: #dc2626;
+}
+
+.eligibility-badge.not-eligible .badge-icon {
+  color: #dc2626;
+}
+
+/* Partial/Check Status */
+.eligibility-badge.partial {
+  background: #fef3c7;
+  color: #d97706;
+}
+
+.eligibility-badge.partial .badge-icon {
+  color: #d97706;
+}

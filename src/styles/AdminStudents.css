@@ -1,0 +1,643 @@
+/* Admin Students Page Styles */
+.admin-students-page {
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 1.5rem;
+}
+
+/* Page Header */
+.page-header {
+  margin-bottom: 1.5rem;
+}
+
+.page-header h1 {
+  font-size: 1.875rem;
+  font-weight: 700;
+  color: #1f2937;
+  margin-bottom: 0.25rem;
+}
+
+.page-header p {
+  color: #6b7280;
+}
+
+/* Filters Section */
+.filters-section {
+  display: flex;
+  gap: 1rem;
+  margin-bottom: 1rem;
+  flex-wrap: wrap;
+}
+
+.search-box {
+  position: relative;
+  flex: 1;
+  min-width: 300px;
+}
+
+.search-box .search-icon {
+  position: absolute;
+  left: 1rem;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 1.25rem;
+  height: 1.25rem;
+  color: #9ca3af;
+}
+
+.search-box input {
+  width: 100%;
+  padding: 0.75rem 1rem 0.75rem 2.75rem;
+  border: 1px solid #d1d5db;
+  border-radius: 0.5rem;
+  font-size: 0.875rem;
+}
+
+.search-box input:focus {
+  outline: none;
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+.filter-group {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  background: white;
+  padding: 0.5rem 0.75rem;
+  border: 1px solid #d1d5db;
+  border-radius: 0.5rem;
+}
+
+.filter-icon {
+  width: 1.25rem;
+  height: 1.25rem;
+  color: #9ca3af;
+}
+
+.filter-group select {
+  border: none;
+  background: transparent;
+  font-size: 0.875rem;
+  color: #374151;
+  cursor: pointer;
+}
+
+.filter-group select:focus {
+  outline: none;
+}
+
+/* Stats Bar */
+.stats-bar {
+  display: flex;
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+  flex-wrap: wrap;
+}
+
+.stat-item {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  background: white;
+  border: 1px solid #e5e7eb;
+  padding: 0.625rem 1rem;
+  border-radius: 0.5rem;
+}
+
+.stat-item .stat-number {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: #1f2937;
+}
+
+.stat-item .stat-label {
+  font-size: 0.875rem;
+  color: #6b7280;
+}
+
+/* Table Container */
+.students-table-container {
+  background: white;
+  border: 1px solid #e5e7eb;
+  border-radius: 0.75rem;
+  overflow: hidden;
+}
+
+.students-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.students-table th {
+  text-align: left;
+  padding: 0.875rem 1.25rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: #6b7280;
+  text-transform: uppercase;
+  background: #f9fafb;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.students-table td {
+  padding: 1rem 1.25rem;
+  font-size: 0.875rem;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.students-table tr:last-child td {
+  border-bottom: none;
+}
+
+.students-table tr:hover {
+  background: #f9fafb;
+}
+
+/* Roll Number */
+.roll-number {
+  font-family: monospace;
+  color: #6b7280;
+  font-weight: 500;
+}
+
+/* Student Cell */
+.student-cell {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.student-avatar {
+  width: 2.5rem;
+  height: 2.5rem;
+  background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.avatar-icon {
+  width: 1.25rem;
+  height: 1.25rem;
+  color: white;
+}
+
+.student-name {
+  font-weight: 500;
+  color: #1f2937;
+}
+
+/* Department Badge */
+.dept-badge {
+  display: inline-block;
+  background: #eff6ff;
+  color: #2563eb;
+  padding: 0.25rem 0.625rem;
+  border-radius: 0.375rem;
+  font-size: 0.75rem;
+  font-weight: 500;
+}
+
+/* CGPA Badge */
+.cgpa-badge {
+  display: inline-block;
+  padding: 0.375rem 0.75rem;
+  border-radius: 0.375rem;
+  font-size: 0.875rem;
+  font-weight: 600;
+}
+
+.cgpa-badge.high {
+  background: #d1fae5;
+  color: #059669;
+}
+
+.cgpa-badge.medium {
+  background: #fef3c7;
+  color: #d97706;
+}
+
+.cgpa-badge.low {
+  background: #fee2e2;
+  color: #dc2626;
+}
+
+/* Applications Count */
+.applications-count {
+  display: flex;
+  align-items: center;
+  gap: 0.375rem;
+  color: #6b7280;
+}
+
+.count-icon {
+  width: 1rem;
+  height: 1rem;
+}
+
+/* View Button */
+.view-btn {
+  display: flex;
+  align-items: center;
+  gap: 0.375rem;
+  background: #eff6ff;
+  color: #2563eb;
+  border: none;
+  padding: 0.5rem 0.875rem;
+  border-radius: 0.375rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.view-btn:hover {
+  background: #dbeafe;
+}
+
+/* Empty State */
+.empty-state {
+  text-align: center;
+  padding: 4rem 2rem;
+}
+
+.empty-state .empty-icon {
+  width: 4rem;
+  height: 4rem;
+  color: #d1d5db;
+  margin-bottom: 1rem;
+}
+
+.empty-state p {
+  color: #6b7280;
+}
+
+/* Pagination */
+.pagination {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1rem 1.25rem;
+  border-top: 1px solid #e5e7eb;
+}
+
+.page-btn {
+  display: flex;
+  align-items: center;
+  gap: 0.375rem;
+  background: white;
+  color: #374151;
+  border: 1px solid #d1d5db;
+  padding: 0.5rem 0.875rem;
+  border-radius: 0.375rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.page-btn:hover:not(:disabled) {
+  background: #f9fafb;
+  border-color: #9ca3af;
+}
+
+.page-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.page-numbers {
+  display: flex;
+  gap: 0.25rem;
+}
+
+.page-number {
+  width: 2rem;
+  height: 2rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 0.375rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: #6b7280;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.page-number:hover {
+  background: #f3f4f6;
+}
+
+.page-number.active {
+  background: #3b82f6;
+  color: white;
+}
+
+/* Modal */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: 1rem;
+}
+
+.modal {
+  background: white;
+  border-radius: 1rem;
+  max-width: 600px;
+  width: 100%;
+  max-height: 90vh;
+  overflow-y: auto;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+}
+
+.modal-large {
+  max-width: 700px;
+}
+
+.modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1.25rem 1.5rem;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.header-content {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.student-avatar-large {
+  width: 3.5rem;
+  height: 3.5rem;
+  background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.student-avatar-large .avatar-icon {
+  width: 1.75rem;
+  height: 1.75rem;
+  color: white;
+}
+
+.modal-header h3 {
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: #1f2937;
+  margin-bottom: 0.25rem;
+}
+
+.student-roll {
+  font-size: 0.875rem;
+  color: #6b7280;
+  font-family: monospace;
+}
+
+.close-btn {
+  background: none;
+  border: none;
+  color: #9ca3af;
+  cursor: pointer;
+  padding: 0.25rem;
+  font-size: 1.5rem;
+  line-height: 1;
+}
+
+.close-btn:hover {
+  color: #374151;
+}
+
+.close-icon {
+  width: 1.5rem;
+  height: 1.5rem;
+}
+
+.modal-body {
+  padding: 1.5rem;
+}
+
+/* Student Info Grid */
+.student-info-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.info-box {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 1rem;
+  background: #f9fafb;
+  border-radius: 0.5rem;
+}
+
+.info-icon {
+  width: 1.25rem;
+  height: 1.25rem;
+  color: #6b7280;
+}
+
+.info-box div {
+  display: flex;
+  flex-direction: column;
+}
+
+.info-box .label {
+  font-size: 0.75rem;
+  color: #6b7280;
+}
+
+.info-box .value {
+  font-size: 0.9375rem;
+  font-weight: 500;
+  color: #1f2937;
+}
+
+.info-box .value.high {
+  color: #059669;
+  font-weight: 600;
+}
+
+/* Section */
+.section {
+  margin-top: 1.5rem;
+  padding-top: 1.5rem;
+  border-top: 1px solid #e5e7eb;
+}
+
+.section h4 {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.9375rem;
+  font-weight: 600;
+  color: #1f2937;
+  margin-bottom: 1rem;
+}
+
+.section-icon {
+  width: 1.25rem;
+  height: 1.25rem;
+  color: #6b7280;
+}
+
+/* Mini Applications List */
+.applications-mini-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.mini-app-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.875rem;
+  background: #f9fafb;
+  border-radius: 0.5rem;
+}
+
+.mini-app-item .app-info {
+  display: flex;
+  flex-direction: column;
+}
+
+.mini-app-item .app-name {
+  font-weight: 500;
+  color: #1f2937;
+  font-size: 0.875rem;
+}
+
+.mini-app-item .app-date {
+  font-size: 0.75rem;
+  color: #6b7280;
+}
+
+.mini-app-item .app-meta {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.mini-app-item .app-amount {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: #059669;
+}
+
+/* Mini Scholarships List */
+.scholarships-mini-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.mini-scholarship-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.875rem;
+  background: #f0fdf4;
+  border-radius: 0.5rem;
+}
+
+.mini-scholarship-item .scholarship-info {
+  display: flex;
+  flex-direction: column;
+}
+
+.mini-scholarship-item .scholarship-name {
+  font-weight: 500;
+  color: #1f2937;
+  font-size: 0.875rem;
+}
+
+.mini-scholarship-item .scholarship-provider {
+  font-size: 0.75rem;
+  color: #6b7280;
+}
+
+.mini-scholarship-item .scholarship-amount {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: #059669;
+}
+
+.no-data {
+  color: #6b7280;
+  font-size: 0.875rem;
+  font-style: italic;
+}
+
+/* Modal Footer */
+.modal-footer {
+  display: flex;
+  justify-content: flex-end;
+  padding: 1rem 1.5rem;
+  border-top: 1px solid #e5e7eb;
+}
+
+.btn-close {
+  padding: 0.625rem 1.25rem;
+  background: #f3f4f6;
+  color: #374151;
+  border: none;
+  border-radius: 0.5rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.btn-close:hover {
+  background: #e5e7eb;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .admin-students-page {
+    padding: 1rem;
+  }
+
+  .stats-bar {
+    overflow-x: auto;
+    flex-wrap: nowrap;
+  }
+
+  .students-table {
+    display: block;
+    overflow-x: auto;
+  }
+
+  .student-info-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .mini-app-item,
+  .mini-scholarship-item {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.5rem;
+  }
+
+  .mini-app-item .app-meta {
+    width: 100%;
+    justify-content: space-between;
+  }
+}

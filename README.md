@@ -1,1 +1,1 @@
-# DBMS-Project
+# College Scholarship Management System
