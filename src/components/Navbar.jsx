@@ -1,11 +1,11 @@
 import { Link, useNavigate, useLocation } from "react-router-dom";
-import { GraduationCap, User, LogOut, Menu, X, Bell } from "lucide-react";
+import { GraduationCap, User, LogOut, Menu, X } from "lucide-react";
 import { useState } from "react";
+import Notifications from "./Notifications";
 import "../styles/Navbar.css";
 
 function Navbar({ user, isAdmin, onLogout }) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const [notificationsOpen, setNotificationsOpen] = useState(false);
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -32,15 +32,6 @@ function Navbar({ user, isAdmin, onLogout }) {
   ];
 
   const navLinks = isAdmin ? adminLinks : studentLinks;
-
-  // Mock notifications
-  const notifications = [
-    { id: 1, message: "Your scholarship application has been approved!", time: "2 hours ago", read: false },
-    { id: 2, message: "New scholarship available: Technical Excellence Award", time: "1 day ago", read: true },
-    { id: 3, message: "Please upload missing documents for OBC Scholarship", time: "2 days ago", read: false },
-  ];
-
-  const unreadCount = notifications.filter((n) => !n.read).length;
 
   return (
     <nav className="navbar">
@@ -71,35 +62,7 @@ function Navbar({ user, isAdmin, onLogout }) {
         <div className="navbar-right">
           {/* Notifications */}
           {user && (
-            <div className="notification-wrapper">
-              <button
-                className="notification-btn"
-                onClick={() => setNotificationsOpen(!notificationsOpen)}
-              >
-                <Bell className="notification-icon" />
-                {unreadCount > 0 && <span className="notification-badge">{unreadCount}</span>}
-              </button>
-
-              {notificationsOpen && (
-                <div className="notification-dropdown">
-                  <div className="notification-header">
-                    <h4>Notifications</h4>
-                    <button className="mark-all-read">Mark all read</button>
-                  </div>
-                  <div className="notification-list">
-                    {notifications.map((notification) => (
-                      <div
-                        key={notification.id}
-                        className={`notification-item ${!notification.read ? "unread" : ""}`}
-                      >
-                        <p className="notification-message">{notification.message}</p>
-                        <span className="notification-time">{notification.time}</span>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-            </div>
+            <Notifications userId={user.user_id} />
           )}
 
           {/* User Info */}

@@ -64,7 +64,7 @@ function AdminDashboard({ admin }) {
 
           // Get recent applications (last 5)
           const recent = apps.slice(0, 5).map(app => ({
-            id: app.application_id?.slice(0, 8) || 'N/A',
+            id: app.student_profile?.roll_number || app.student_id?.slice(0, 8) || 'N/A',
             student: app.student_profile?.users?.name || 'Unknown',
             scholarship: app.scholarships?.name || 'Unknown',
             date: new Date(app.applied_date).toLocaleDateString(),

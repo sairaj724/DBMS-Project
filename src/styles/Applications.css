@@ -8,6 +8,9 @@
 /* Page Header */
 .page-header {
   margin-bottom: 1.5rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
 }
 
 .page-header h1 {
@@ -19,6 +22,39 @@
 
 .page-header p {
   color: #6b7280;
+}
+
+.refresh-btn {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 1rem;
+  background: white;
+  border: 1px solid #d1d5db;
+  border-radius: 0.5rem;
+  color: #374151;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.refresh-btn:hover:not(:disabled) {
+  background: #f9fafb;
+  border-color: #9ca3af;
+}
+
+.refresh-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.spinning {
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
 }
 
 /* Stats Row */
@@ -188,10 +224,19 @@
   margin-bottom: 1rem;
 }
 
-.app-id {
+.app-roll-number.app-id {
   font-size: 0.875rem;
   font-weight: 600;
   color: #6b7280;
+}
+
+.app-roll-number {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: #0284c7;
+  background: #e0f2fe;
+  padding: 0.25rem 0.5rem;
+  border-radius: 0.25rem;
   font-family: monospace;
 }
 
@@ -431,6 +476,12 @@
 }
 
 .modal-header .app-id {
+  font-size: 0.875rem;
+  color: #6b7280;
+  margin-top: 0.25rem;
+}
+
+.scholarship-provider {
   font-size: 0.875rem;
   color: #6b7280;
   margin-top: 0.25rem;

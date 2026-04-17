@@ -128,6 +128,21 @@
   cursor: not-allowed;
 }
 
+.applied-btn.approved {
+  background: #d1fae5;
+  color: #059669;
+}
+
+.applied-btn.rejected {
+  background: #fee2e2;
+  color: #dc2626;
+}
+
+.applied-btn.applied {
+  background: #fef3c7;
+  color: #d97706;
+}
+
 .not-eligible-btn {
   background: #fee2e2;
   color: #dc2626;
@@ -619,6 +634,99 @@
 
 .success-content p {
   color: #6b7280;
+}
+
+/* Status Card */
+.status-card {
+  background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%);
+  border: 1px solid #bae6fd;
+}
+
+.status-display {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 1rem;
+  background: white;
+  border-radius: 0.5rem;
+  margin-bottom: 1rem;
+}
+
+.status-icon {
+  width: 1.5rem;
+  height: 1.5rem;
+}
+
+.status-icon.approved {
+  color: #059669;
+}
+
+.status-icon.rejected {
+  color: #dc2626;
+}
+
+.status-icon.applied {
+  color: #d97706;
+}
+
+.status-text {
+  font-weight: 600;
+  font-size: 1rem;
+}
+
+.status-text.approved {
+  color: #059669;
+}
+
+.status-text.rejected {
+  color: #dc2626;
+}
+
+.status-text.applied {
+  color: #d97706;
+}
+
+.status-note {
+  color: #6b7280;
+  font-size: 0.875rem;
+  margin-bottom: 1rem;
+  line-height: 1.5;
+}
+
+.view-application-btn {
+  width: 100%;
+  padding: 0.75rem;
+  background: #0284c7;
+  color: white;
+  border: none;
+  border-radius: 0.5rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.view-application-btn:hover {
+  background: #0369a1;
+}
+
+/* Loading State */
+.loading-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 4rem;
+  gap: 1rem;
+}
+
+.loading-spinner {
+  animation: spin 1s linear infinite;
+  color: #3b82f6;
+}
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
 }
 
 /* Responsive */

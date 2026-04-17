@@ -63,9 +63,9 @@ function AdminStudents() {
     if (searchQuery) {
       const query = searchQuery.toLowerCase();
       const matchName = student.name.toLowerCase().includes(query);
-      const matchId = student.id.toLowerCase().includes(query);
+      const matchRollNumber = (student.roll_number || '').toLowerCase().includes(query);
       const matchEmail = student.email.toLowerCase().includes(query);
-      if (!matchName && !matchId && !matchEmail) return false;
+      if (!matchName && !matchRollNumber && !matchEmail) return false;
     }
     if (deptFilter !== "all" && student.department !== deptFilter) {
       return false;
@@ -202,7 +202,6 @@ function AdminStudents() {
         <table className="students-table">
           <thead>
             <tr>
-              <th>Roll Number</th>
               <th>Name</th>
               <th>Department</th>
               <th>Year</th>
@@ -216,7 +215,6 @@ function AdminStudents() {
               const studentApps = getStudentApplications(student.id);
               return (
                 <tr key={student.id}>
-                  <td className="roll-number">{student.id}</td>
                   <td>
                     <div className="student-cell">
                       <div className="student-avatar">
@@ -293,7 +291,6 @@ function AdminStudents() {
                 </div>
                 <div>
                   <h3>{selectedStudent.name}</h3>
-                  <p className="student-roll">{selectedStudent.id}</p>
                 </div>
               </div>
               <button className="close-btn" onClick={() => setSelectedStudent(null)}>

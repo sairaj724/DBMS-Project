@@ -75,9 +75,36 @@ function StudentDashboard({ user }) {
           setScholarships(transformedScholarships);
         }
 
-        if (applicationsRes.success) {
+        if (applicationsRes.success && profileRes?.success) {
           // Transform applications to match frontend format
+          // Use student_profile.id (student_id) for filtering
+          const studentId = userProfile?.id || profileRes?.data?.id;
+          console.log('Filtering applications for studentId:', studentId);
+          console.log('Total applications before filter:', applicationsRes.data.length);
+          const userApplications = applicationsRes.data.filter(app => {
+            console.log('Comparing:', app.student_id, '===', studentId, '=>', app.student_id === studentId);
+            return app.student_id === studentId;
+          });
+          console.log('Applications after filter:', userApplications.length);
+          const transformedApps = userApplications.map(app => ({
+            id: app.application_id,
+            scholarshipId: app.scholarship_id,
+            studentId: app.student_id,
+            status: app.status === 'pending' ? 'Under Review' : 
+                    app.status === 'approved' ? 'Approved' :
+                    app.status === 'rejected' ? 'Rejected' : 'Pending Issues',
+            appliedDate: app.applied_date,
+            timeline: [
+              { date: app.applied_date, status: "Applied", description: "Application submitted" },
+              { date: app.updated_at, status: app.status, description: `Status: ${app.status}` }
+            ]
+          }));
+          setApplications(transformedApps);
+        } else if (applicationsRes.success) {
+          // If no profile, try filtering by user_id as fallback
+          console.log('No profile found, trying user_id filter:', user?.user_id);
           const userApplications = applicationsRes.data.filter(app => app.student_id === user?.user_id);
+          console.log('Applications with user_id filter:', userApplications.length);
           const transformedApps = userApplications.map(app => ({
             id: app.application_id,
             scholarshipId: app.scholarship_id,
@@ -101,7 +128,7 @@ function StudentDashboard({ user }) {
     };
 
     fetchData();
-  }, [user?.user_id]);
+  }, [user?.user_id, userProfile?.id]);
 
   // Calculate stats
   const totalApplied = applications.length;
@@ -184,7 +211,7 @@ function StudentDashboard({ user }) {
         <div className="welcome-section">
           <h1>Welcome, {user.name}!</h1>
           <p>
-            {userProfile?.course || user?.department || 'No Department'} • Year {studentYear} • Roll No: {user?.user_id?.slice(0, 8)}
+            {userProfile?.course || user?.department || 'No Department'} • Year {studentYear}
           </p>
         </div>
         <div className="quick-actions">

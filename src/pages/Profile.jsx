@@ -74,9 +74,9 @@ function Profile({ user, onUpdateUser }) {
           cgpa: 0,
           phone_no: '',
           gender: '',
-          category: '',
-          income: 0,
-          hosteller: false,
+            category: '',
+            income: 0,
+            hosteller: false,
         };
         setProfile(defaultProfile);
         setEditedProfile(defaultProfile);
@@ -214,7 +214,6 @@ function Profile({ user, onUpdateUser }) {
                 </button>
               </div>
               <h3 className="profile-name">{profile?.name || user?.name || 'Unknown'}</h3>
-              <p className="profile-id">{user?.user_id?.slice(0, 8) || 'No ID'}</p>
               <span className="profile-badge">{profile?.course || 'No Course'}</span>
             </div>
 
@@ -458,11 +457,6 @@ function Profile({ user, onUpdateUser }) {
           {activeTab === "academic" && (
             <div className="info-section">
               <div className="info-grid">
-                <div className="info-group">
-                  <label>Roll Number</label>
-                  <p>{profile?.id?.slice(0, 8) || 'N/A'}</p>
-                </div>
-
                 <div className="info-group">
                   <label>Department</label>
                   {isEditing ? (

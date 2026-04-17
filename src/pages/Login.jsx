@@ -68,17 +68,19 @@ function Login({ onLogin }) {
           }
         }
       } else {
-        // Login - Authenticate user
+        // Login - Authenticate user with role check
+        const role = isAdmin ? 'admin' : 'student';
         const credentials = {
           email: formData.email,
-          password: formData.password
+          password: formData.password,
+          role: role
         };
 
         const response = await apiService.loginUser(credentials);
         
         if (response.success) {
-          onLogin(response.data, response.data.role === 'admin');
-          navigate(response.data.role === 'admin' ? "/admin" : "/dashboard");
+          onLogin(response.data, isAdmin);
+          navigate(isAdmin ? "/admin" : "/dashboard");
         }
       }
     } catch (err) {

@@ -206,7 +206,6 @@ function AdminApplications() {
         <table className="applications-table">
           <thead>
             <tr>
-              <th>App ID</th>
               <th>Student</th>
               <th>Scholarship</th>
               <th>Applied Date</th>
@@ -217,7 +216,6 @@ function AdminApplications() {
           <tbody>
             {filteredApplications.map((app) => (
               <tr key={app.application_id}>
-                <td className="app-id">{app.application_id?.slice(0, 8)}...</td>
                 <td>
                   <div className="student-cell">
                     <div className="student-avatar">
@@ -291,7 +289,7 @@ function AdminApplications() {
             <div className="modal-header">
               <div>
                 <h3>Review Application</h3>
-                <p className="app-id">{selectedApp.application_id}</p>
+                <p className="roll-no-display">Roll No: {selectedApp.student_profile?.roll_number || 'N/A'}</p>
               </div>
               <button className="close-btn" onClick={() => setSelectedApp(null)}>
                 <X className="close-icon" />

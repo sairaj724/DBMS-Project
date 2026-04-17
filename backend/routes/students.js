@@ -27,7 +27,7 @@ router.get('/', async (req, res) => {
       phone_number: student.phone_no || 'N/A',
       gender: student.gender || 'N/A',
       category: student.category,
-      income: student.income
+      income: student.income,
     }));
 
     res.json({ success: true, data: students });
@@ -64,7 +64,7 @@ router.get('/:id', async (req, res) => {
       phone_number: data.phone_no || 'N/A',
       gender: data.gender || 'N/A',
       category: data.category,
-      income: data.income
+      income: data.income,
     };
 
     res.json({ success: true, data: student });
@@ -105,7 +105,7 @@ router.get('/user/:userId', async (req, res) => {
       .eq('user_id', req.params.userId)
       .single();
 
-    if (error) throw error;
+    if (error && error.code !== 'PGRST116') throw error;
 
     if (!data) {
       return res.status(404).json({ success: false, error: 'Student profile not found' });
@@ -137,7 +137,7 @@ router.get('/user/:userId', async (req, res) => {
 // Update student profile by user_id
 router.put('/user/:userId', async (req, res) => {
   try {
-    const { cgpa, income, category, gender, hosteller, course, phone_no, year_of_study } = req.body;
+    const { cgpa, income, category, gender, hosteller, course, phone_no, year_of_study, roll_number } = req.body;
 
     const { data, error } = await supabase
       .from('student_profile')
@@ -150,6 +150,7 @@ router.put('/user/:userId', async (req, res) => {
         course,
         phone_no,
         year_of_study,
+        roll_number,
         updated_at: new Date().toISOString()
       })
       .eq('user_id', req.params.userId)
@@ -178,6 +179,7 @@ router.put('/user/:userId', async (req, res) => {
       category: data.category || '',
       income: data.income || 0,
       hosteller: data.hosteller || false,
+      roll_number: data.roll_number || '',
       updated_at: data.updated_at
     };
 
@@ -190,7 +192,7 @@ router.put('/user/:userId', async (req, res) => {
 // Create student profile
 router.post('/user/:userId', async (req, res) => {
   try {
-    const { cgpa, income, category, gender, hosteller, course, phone_no, year_of_study } = req.body;
+    const { cgpa, income, category, gender, hosteller, course, phone_no, year_of_study, roll_number } = req.body;
 
     const { data, error } = await supabase
       .from('student_profile')
@@ -202,6 +204,7 @@ router.post('/user/:userId', async (req, res) => {
         gender,
         hosteller,
         course,
+        roll_number,
         phone_no,
         year_of_study
       })

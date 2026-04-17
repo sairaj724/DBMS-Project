@@ -103,8 +103,8 @@ class ApiService {
     });
   }
 
-  async markNotificationAsRead(id) {
-    return this.request(`/notifications/${id}/read`, {
+  async markNotificationAsRead(notificationId) {
+    return this.request(`/notifications/${notificationId}/read`, {
       method: 'PUT',
     });
   }
@@ -193,6 +193,13 @@ class ApiService {
     return this.request('/users/login', {
       method: 'POST',
       body: JSON.stringify(credentials),
+    });
+  }
+
+  async loginUserWithRole(email, password, role) {
+    return this.request('/users/login', {
+      method: 'POST',
+      body: JSON.stringify({ email, password, role }),
     });
   }
 

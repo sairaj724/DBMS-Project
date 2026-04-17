@@ -25,6 +25,7 @@ function Applications({ user }) {
   const [selectedApp, setSelectedApp] = useState(null);
   const [scholarships, setScholarships] = useState([]);
   const [applications, setApplications] = useState([]);
+  const [userProfile, setUserProfile] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
@@ -33,6 +34,22 @@ function Applications({ user }) {
     const fetchData = async () => {
       try {
         setLoading(true);
+        
+        // First fetch user profile to get student_id
+        let profileData = null;
+        if (user?.user_id) {
+          try {
+            const profileRes = await apiService.getStudentProfileByUserId(user.user_id);
+            if (profileRes.success) {
+              profileData = profileRes.data;
+              setUserProfile(profileData);
+            }
+          } catch (err) {
+            console.log("Profile not found");
+          }
+        }
+        
+        // Fetch scholarships and applications
         const [scholarshipsRes, applicationsRes] = await Promise.all([
           apiService.getScholarships(),
           apiService.getApplications()
@@ -49,8 +66,11 @@ function Applications({ user }) {
         }
 
         if (applicationsRes.success) {
-          // Transform applications to match frontend format
-          const userApplications = applicationsRes.data.filter(app => app.student_id === user?.user_id);
+          // Filter applications by student_id (from profile) or user_id as fallback
+          const studentId = profileData?.id || user?.user_id;
+          const userApplications = applicationsRes.data.filter(app => 
+            app.student_id === studentId || app.student_id === user?.user_id
+          );
           const transformedApps = userApplications.map(app => ({
             id: app.application_id,
             scholarshipId: app.scholarship_id,
@@ -63,7 +83,7 @@ function Applications({ user }) {
             remarks: app.admin_notes,
             timeline: [
               { date: app.applied_date, status: "Applied", description: "Application submitted" },
-              { date: app.updated_at, status: app.status, description: `Status: ${app.status}` }
+              { date: app.updated_at, status: app.status === 'pending' ? 'Under Review' : app.status, description: `Status: ${app.status}` }
             ]
           }));
           setApplications(transformedApps);
@@ -91,8 +111,7 @@ function Applications({ user }) {
     if (searchQuery) {
       const query = searchQuery.toLowerCase();
       const matchName = scholarship?.name.toLowerCase().includes(query);
-      const matchId = app.id.toLowerCase().includes(query);
-      if (!matchName && !matchId) return false;
+      if (!matchName) return false;
     }
 
     return true;
@@ -129,8 +148,18 @@ function Applications({ user }) {
     <div className="applications-page">
       {/* Page Header */}
       <div className="page-header">
-        <h1>My Applications</h1>
-        <p>Track and manage your scholarship applications</p>
+        <div>
+          <h1>My Applications</h1>
+          <p>Track and manage your scholarship applications</p>
+        </div>
+        <button 
+          className="refresh-btn" 
+          onClick={() => window.location.reload()}
+          disabled={loading}
+        >
+          <Loader2 className={`btn-icon ${loading ? 'spinning' : ''}`} />
+          Refresh
+        </button>
       </div>
 
       {/* Loading State */}
@@ -234,7 +263,6 @@ function Applications({ user }) {
                 className={`application-card ${getStatusClass(app.status)}`}
               >
                 <div className="app-header">
-                  <div className="app-id">{app.id}</div>
                   <div className={`app-status-badge ${getStatusClass(app.status)}`}>
                     {getStatusIcon(app.status)}
                     <span>{app.status}</span>
@@ -324,7 +352,7 @@ function Applications({ user }) {
                     <div className="app-detail-header">
                       <div>
                         <h4>{scholarship?.name}</h4>
-                        <p className="app-id">Application ID: {selectedApp.id}</p>
+                        <p className="scholarship-provider">{scholarship?.provider || 'VJTI Trust'}</p>
                       </div>
                       <div className={`status-badge-large ${getStatusClass(selectedApp.status)}`}>
                         {getStatusIcon(selectedApp.status)}

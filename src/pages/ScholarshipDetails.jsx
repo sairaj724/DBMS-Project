@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import {
   ArrowLeft,
@@ -14,53 +14,168 @@ import {
   Download,
   ExternalLink,
   ChevronRight,
+  Loader2,
+  AlertCircle,
 } from "lucide-react";
-import { scholarships, applications } from "../data/dummyData";
+import { apiService } from "../services/api";
 import EligibilityBadge from "../components/EligibilityBadge";
 import "../styles/ScholarshipDetails.css";
 
 function ScholarshipDetails({ user }) {
   const { id } = useParams();
   const navigate = useNavigate();
+  
+  const [scholarship, setScholarship] = useState(null);
+  const [userProfile, setUserProfile] = useState(null);
+  const [existingApplication, setExistingApplication] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  
   const [showApplyModal, setShowApplyModal] = useState(false);
   const [applySuccess, setApplySuccess] = useState(false);
+  const [applying, setApplying] = useState(false);
 
-  const scholarship = scholarships.find((s) => s.id === parseInt(id));
+  // Fetch scholarship data, user profile, and check existing applications
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        setLoading(true);
+        
+        // Fetch scholarship details
+        const scholarshipRes = await apiService.getScholarship(id);
+        
+        // Fetch user profile
+        let profileData = null;
+        if (user?.user_id) {
+          try {
+            const profileRes = await apiService.getStudentProfileByUserId(user.user_id);
+            if (profileRes.success) {
+              profileData = profileRes.data;
+            }
+          } catch (err) {
+            console.log("Profile not found");
+          }
+        }
+        
+        // Check if user already applied for this scholarship
+        let existingApp = null;
+        if (user?.user_id && profileData?.id) {
+          try {
+            const appsRes = await apiService.getStudentApplications(profileData.id);
+            if (appsRes.success && appsRes.data) {
+              existingApp = appsRes.data.find(app => app.scholarship_id === id);
+            }
+          } catch (err) {
+            console.log("Could not fetch applications");
+          }
+        }
+        
+        if (scholarshipRes.success) {
+          // Transform scholarship data
+          const s = scholarshipRes.data;
+          setScholarship({
+            id: s.scholarship_id,
+            name: s.name,
+            description: s.description,
+            provider: "VJTI Trust",
+            amount: s.amount,
+            deadline: s.deadline,
+            category: s.category || "General",
+            status: s.is_active ? "Active" : "Inactive",
+            applicationsCount: 0, // Could fetch this separately
+            documents: s.documents || ["Income Certificate", "Caste Certificate", "Marksheet"],
+            eligibility: {
+              minCgpa: s.min_cgpa || 0,
+              maxIncome: s.max_income || 10000000,
+              category: s.category === "ALL" ? ["All"] : s.category ? [s.category] : ["All"],
+              caste: s.category === "ALL" ? ["All"] : s.category ? [s.category] : ["All"],
+              departments: ["All"],
+              year: [1, 2, 3, 4],
+              gender: s.gender || "all",
+              hosteller: s.hosteller
+            }
+          });
+          setUserProfile(profileData);
+          setExistingApplication(existingApp);
+        } else {
+          setError("Failed to fetch scholarship details");
+        }
+      } catch (err) {
+        setError(err.message || "Error loading scholarship");
+      } finally {
+        setLoading(false);
+      }
+    };
 
-  if (!scholarship) {
+    fetchData();
+  }, [id, user?.user_id]);
+
+  if (loading) {
+    return (
+      <div className="scholarship-details-page">
+        <div className="loading-container">
+          <Loader2 className="loading-spinner" />
+          <p>Loading scholarship details...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (error || !scholarship) {
     return (
       <div className="not-found">
-        <h2>Scholarship Not Found</h2>
+        <h2>{error || "Scholarship Not Found"}</h2>
         <button onClick={() => navigate("/scholarships")}>Back to Scholarships</button>
       </div>
     );
   }
 
   // Check if already applied
-  const hasApplied = applications.some(
-    (app) => app.scholarshipId === scholarship.id && app.studentId === user?.id
-  );
+  const hasApplied = !!existingApplication;
 
-  // Check eligibility
+  // Check eligibility using profile data
   const checkEligibility = () => {
     if (!user) return { status: "partial", reason: "Login to check eligibility" };
+    
+    const studentData = userProfile || user;
+    const studentCgpa = parseFloat(studentData?.cgpa) || 0;
+    const studentIncome = parseFloat(studentData?.income) || 0;
+    const studentCategory = studentData?.category || studentData?.caste || "";
+    const studentGender = (studentData?.gender || "").toLowerCase();
+    const studentYear = parseInt(studentData?.year) || parseInt(studentData?.year_of_study) || 1;
+    const studentHosteller = studentData?.hosteller || false;
 
     const reasons = [];
+    const minCgpa = parseFloat(scholarship.eligibility.minCgpa) || 0;
+    const maxIncome = parseFloat(scholarship.eligibility.maxIncome) || 10000000;
 
-    if (user.cgpa < scholarship.eligibility.minCgpa) {
-      reasons.push(`CGPA must be at least ${scholarship.eligibility.minCgpa}`);
+    if (studentCgpa < minCgpa) {
+      reasons.push(`CGPA must be at least ${minCgpa} (you have ${studentCgpa})`);
     }
 
-    if (user.income > scholarship.eligibility.maxIncome) {
-      reasons.push(`Family income must be below ₹${scholarship.eligibility.maxIncome.toLocaleString()}`);
+    if (studentIncome > maxIncome) {
+      reasons.push(`Family income must be below ₹${maxIncome.toLocaleString()} (you have ₹${studentIncome.toLocaleString()})`);
     }
 
-    if (!scholarship.eligibility.caste.includes(user.caste) && !scholarship.eligibility.caste.includes("All")) {
-      reasons.push(`Only for ${scholarship.eligibility.caste.join(", ")} categories`);
+    const allowedCategories = scholarship.eligibility.category || scholarship.eligibility.caste || ["All"];
+    const categoryMatch = allowedCategories.includes("All") || 
+                          allowedCategories.includes(studentCategory) ||
+                          allowedCategories.some(cat => cat.toLowerCase() === studentCategory.toLowerCase());
+    if (!categoryMatch && studentCategory) {
+      reasons.push(`Only for ${allowedCategories.join(", ")} categories`);
     }
 
-    if (scholarship.eligibility.gender && scholarship.eligibility.gender !== user.gender) {
+    const scholarshipGender = (scholarship.eligibility.gender || "all").toLowerCase();
+    if (scholarshipGender !== "all" && scholarshipGender !== studentGender && studentGender) {
       reasons.push(`Only for ${scholarship.eligibility.gender} students`);
+    }
+
+    if (!scholarship.eligibility.year.includes(studentYear)) {
+      reasons.push(`Only for year ${scholarship.eligibility.year.join(", ")} students`);
+    }
+    
+    if (scholarship.eligibility.hosteller === true && !studentHosteller) {
+      reasons.push(`Only for hosteller students`);
     }
 
     if (reasons.length === 0) {
@@ -77,15 +192,47 @@ function ScholarshipDetails({ user }) {
     setShowApplyModal(true);
   };
 
-  const confirmApply = () => {
-    // Simulate API call
-    setTimeout(() => {
-      setApplySuccess(true);
-      setTimeout(() => {
-        setShowApplyModal(false);
-        navigate("/applications");
-      }, 2000);
-    }, 1000);
+  const confirmApply = async () => {
+    setApplying(true);
+    try {
+      // Create application
+      const applicationData = {
+        student_id: userProfile?.id || user?.user_id,
+        scholarship_id: id,
+        status: 'pending',
+        admin_notes: ''
+      };
+      
+      const response = await apiService.createApplication(applicationData);
+      
+      if (response.success) {
+        setApplySuccess(true);
+        setExistingApplication(response.data);
+        setTimeout(() => {
+          setShowApplyModal(false);
+          navigate("/applications");
+        }, 2000);
+      } else {
+        alert("Failed to submit application: " + (response.error || "Unknown error"));
+      }
+    } catch (err) {
+      alert("Error submitting application: " + err.message);
+    } finally {
+      setApplying(false);
+    }
+  };
+
+  // Format application status for display
+  const getApplicationStatusDisplay = () => {
+    if (!existingApplication) return null;
+    const status = existingApplication.status?.toLowerCase();
+    const statusConfig = {
+      pending: { text: "Applied - Under Verification", class: "applied", icon: Clock },
+      approved: { text: "Verified and Approved", class: "approved", icon: CheckCircle },
+      rejected: { text: "Application Rejected", class: "rejected", icon: XCircle },
+      under_review: { text: "Under Review", class: "applied", icon: Clock }
+    };
+    return statusConfig[status] || { text: "Applied", class: "applied", icon: CheckCircle };
   };
 
   return (
@@ -115,10 +262,16 @@ function ScholarshipDetails({ user }) {
         {/* Action Buttons */}
         <div className="header-actions">
           {hasApplied ? (
-            <button className="applied-btn" disabled>
-              <CheckCircle className="btn-icon" />
-              Already Applied
-            </button>
+            (() => {
+              const statusDisplay = getApplicationStatusDisplay();
+              const StatusIcon = statusDisplay?.icon || CheckCircle;
+              return (
+                <button className={`applied-btn ${statusDisplay?.class || ''}`} disabled>
+                  <StatusIcon className="btn-icon" />
+                  {statusDisplay?.text || "Already Applied"}
+                </button>
+              );
+            })()
           ) : eligibility.status === "eligible" ? (
             <button className="apply-now-btn" onClick={handleApply}>
               Apply Now
@@ -179,90 +332,110 @@ function ScholarshipDetails({ user }) {
           <div className="info-card">
             <h3>Eligibility Criteria</h3>
             <div className="criteria-list">
-              <div className={`criterion ${user?.cgpa >= scholarship.eligibility.minCgpa ? "met" : ""}`}>
-                <div className="criterion-icon">
-                  {user?.cgpa >= scholarship.eligibility.minCgpa ? <CheckCircle /> : <div className="empty-circle" />}
-                </div>
-                <div className="criterion-content">
-                  <span className="criterion-label">Minimum CGPA</span>
-                  <span className="criterion-value">{scholarship.eligibility.minCgpa} or above</span>
-                  {user && (
-                    <span className={`user-value ${user.cgpa >= scholarship.eligibility.minCgpa ? "met" : "not-met"}`}>
-                      Your CGPA: {user.cgpa}
-                    </span>
-                  )}
-                </div>
-              </div>
+              {(() => {
+                const studentData = userProfile || user;
+                const studentCgpa = parseFloat(studentData?.cgpa) || 0;
+                const minCgpa = parseFloat(scholarship.eligibility.minCgpa) || 0;
+                const studentIncome = parseFloat(studentData?.income) || 0;
+                const maxIncome = parseFloat(scholarship.eligibility.maxIncome) || 10000000;
+                const studentCategory = studentData?.category || studentData?.caste || "";
+                const allowedCategories = scholarship.eligibility.category || scholarship.eligibility.caste || ["All"];
+                const categoryMatch = allowedCategories.includes("All") || 
+                                      allowedCategories.includes(studentCategory) ||
+                                      allowedCategories.some(cat => cat.toLowerCase() === studentCategory.toLowerCase());
+                const studentYear = parseInt(studentData?.year) || parseInt(studentData?.year_of_study) || 1;
+                const studentGender = (studentData?.gender || "").toLowerCase();
+                const scholarshipGender = (scholarship.eligibility.gender || "all").toLowerCase();
+                
+                return (
+                  <>
+                    <div className={`criterion ${studentCgpa >= minCgpa ? "met" : ""}`}>
+                      <div className="criterion-icon">
+                        {studentCgpa >= minCgpa ? <CheckCircle /> : <div className="empty-circle" />}
+                      </div>
+                      <div className="criterion-content">
+                        <span className="criterion-label">Minimum CGPA</span>
+                        <span className="criterion-value">{minCgpa} or above</span>
+                        {user && (
+                          <span className={`user-value ${studentCgpa >= minCgpa ? "met" : "not-met"}`}>
+                            Your CGPA: {studentCgpa || 'Not set'}
+                          </span>
+                        )}
+                      </div>
+                    </div>
 
-              <div className={`criterion ${user?.income <= scholarship.eligibility.maxIncome ? "met" : ""}`}>
-                <div className="criterion-icon">
-                  {user?.income <= scholarship.eligibility.maxIncome ? <CheckCircle /> : <div className="empty-circle" />}
-                </div>
-                <div className="criterion-content">
-                  <span className="criterion-label">Family Income</span>
-                  <span className="criterion-value">
-                    Below ₹{scholarship.eligibility.maxIncome.toLocaleString()} per annum
-                  </span>
-                  {user && (
-                    <span className={`user-value ${user.income <= scholarship.eligibility.maxIncome ? "met" : "not-met"}`}>
-                      Your Income: ₹{user.income.toLocaleString()}
-                    </span>
-                  )}
-                </div>
-              </div>
+                    <div className={`criterion ${studentIncome <= maxIncome ? "met" : ""}`}>
+                      <div className="criterion-icon">
+                        {studentIncome <= maxIncome ? <CheckCircle /> : <div className="empty-circle" />}
+                      </div>
+                      <div className="criterion-content">
+                        <span className="criterion-label">Family Income</span>
+                        <span className="criterion-value">
+                          Below ₹{maxIncome.toLocaleString()} per annum
+                        </span>
+                        {user && (
+                          <span className={`user-value ${studentIncome <= maxIncome ? "met" : "not-met"}`}>
+                            Your Income: ₹{(studentIncome || 0).toLocaleString()}
+                          </span>
+                        )}
+                      </div>
+                    </div>
 
-              <div className="criterion">
-                <div className="criterion-icon">
-                  <CheckCircle />
-                </div>
-                <div className="criterion-content">
-                  <span className="criterion-label">Caste Category</span>
-                  <span className="criterion-value">
-                    {scholarship.eligibility.caste.includes("All") 
-                      ? "Open to all categories" 
-                      : scholarship.eligibility.caste.join(", ")}
-                  </span>
-                  {user && (
-                    <span className={`user-value ${scholarship.eligibility.caste.includes(user.caste) || scholarship.eligibility.caste.includes("All") ? "met" : "not-met"}`}>
-                      Your Category: {user.caste}
-                    </span>
-                  )}
-                </div>
-              </div>
+                    <div className={`criterion ${!studentCategory || categoryMatch ? "met" : ""}`}>
+                      <div className="criterion-icon">
+                        {!studentCategory || categoryMatch ? <CheckCircle /> : <div className="empty-circle" />}
+                      </div>
+                      <div className="criterion-content">
+                        <span className="criterion-label">Caste Category</span>
+                        <span className="criterion-value">
+                          {(scholarship.eligibility.category || scholarship.eligibility.caste || ["All"]).includes("All") 
+                            ? "Open to all categories" 
+                            : (scholarship.eligibility.category || scholarship.eligibility.caste || []).join(", ")}
+                        </span>
+                        {user && (
+                          <span className={`user-value ${categoryMatch ? "met" : "not-met"}`}>
+                            Your Category: {studentCategory || 'Not set'}
+                          </span>
+                        )}
+                      </div>
+                    </div>
 
-              <div className="criterion">
-                <div className="criterion-icon">
-                  <CheckCircle />
-                </div>
-                <div className="criterion-content">
-                  <span className="criterion-label">Year of Study</span>
-                  <span className="criterion-value">
-                    Year {scholarship.eligibility.year.join(", ")} students
-                  </span>
-                  {user && (
-                    <span className={`user-value ${scholarship.eligibility.year.includes(user.year) ? "met" : "not-met"}`}>
-                      Your Year: Year {user.year}
-                    </span>
-                  )}
-                </div>
-              </div>
+                    <div className={`criterion ${scholarship.eligibility.year.includes(studentYear) ? "met" : ""}`}>
+                      <div className="criterion-icon">
+                        {scholarship.eligibility.year.includes(studentYear) ? <CheckCircle /> : <div className="empty-circle" />}
+                      </div>
+                      <div className="criterion-content">
+                        <span className="criterion-label">Year of Study</span>
+                        <span className="criterion-value">
+                          Year {scholarship.eligibility.year.join(", ")} students
+                        </span>
+                        {user && (
+                          <span className={`user-value ${scholarship.eligibility.year.includes(studentYear) ? "met" : "not-met"}`}>
+                            Your Year: Year {studentYear}
+                          </span>
+                        )}
+                      </div>
+                    </div>
 
-              {scholarship.eligibility.gender && (
-                <div className="criterion">
-                  <div className="criterion-icon">
-                    <CheckCircle />
-                  </div>
-                  <div className="criterion-content">
-                    <span className="criterion-label">Gender</span>
-                    <span className="criterion-value">{scholarship.eligibility.gender} students only</span>
-                    {user && (
-                      <span className={`user-value ${user.gender === scholarship.eligibility.gender ? "met" : "not-met"}`}>
-                        Your Gender: {user.gender}
-                      </span>
+                    {scholarship.eligibility.gender && scholarshipGender !== "all" && (
+                      <div className={`criterion ${studentGender === scholarshipGender ? "met" : ""}`}>
+                        <div className="criterion-icon">
+                          {studentGender === scholarshipGender ? <CheckCircle /> : <div className="empty-circle" />}
+                        </div>
+                        <div className="criterion-content">
+                          <span className="criterion-label">Gender</span>
+                          <span className="criterion-value">{scholarship.eligibility.gender} students only</span>
+                          {user && (
+                            <span className={`user-value ${studentGender === scholarshipGender ? "met" : "not-met"}`}>
+                              Your Gender: {studentData?.gender || 'Not set'}
+                            </span>
+                          )}
+                        </div>
+                      </div>
                     )}
-                  </div>
-                </div>
-              )}
+                  </>
+                );
+              })()}
             </div>
           </div>
 
@@ -364,25 +537,32 @@ function ScholarshipDetails({ user }) {
             </a>
           </div>
 
-          {/* Similar Scholarships */}
-          <div className="sidebar-card">
-            <h4>Similar Scholarships</h4>
-            <div className="similar-list">
-              {scholarships
-                .filter((s) => s.category === scholarship.category && s.id !== scholarship.id)
-                .slice(0, 3)
-                .map((s) => (
-                  <div
-                    key={s.id}
-                    className="similar-item"
-                    onClick={() => navigate(`/scholarships/${s.id}`)}
-                  >
-                    <span className="similar-name">{s.name}</span>
-                    <span className="similar-amount">₹{s.amount.toLocaleString()}</span>
-                  </div>
-                ))}
+          {/* Application Status for Applied Scholarships */}
+          {hasApplied && (
+            <div className="sidebar-card status-card">
+              <h4>Application Status</h4>
+              <div className="status-display">
+                {(() => {
+                  const statusDisplay = getApplicationStatusDisplay();
+                  const StatusIcon = statusDisplay?.icon || CheckCircle;
+                  return (
+                    <>
+                      <StatusIcon className={`status-icon ${statusDisplay?.class}`} />
+                      <span className={`status-text ${statusDisplay?.class}`}>
+                        {statusDisplay?.text}
+                      </span>
+                    </>
+                  );
+                })()}
+              </div>
+              <p className="status-note">
+                You can track your application status in the Applications page.
+              </p>
+              <button className="view-application-btn" onClick={() => navigate("/applications")}>
+                View Application
+              </button>
             </div>
-          </div>
+          )}
         </div>
       </div>
 
@@ -418,8 +598,8 @@ function ScholarshipDetails({ user }) {
                   <button className="btn-cancel" onClick={() => setShowApplyModal(false)}>
                     Cancel
                   </button>
-                  <button className="btn-confirm" onClick={confirmApply}>
-                    Confirm Application
+                  <button className="btn-confirm" onClick={confirmApply} disabled={applying}>
+                    {applying ? 'Submitting...' : 'Confirm Application'}
                   </button>
                 </div>
               </>

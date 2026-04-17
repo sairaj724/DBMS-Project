@@ -38,12 +38,12 @@ router.post('/register', async (req, res) => {
 // Login user
 router.post('/login', async (req, res) => {
   try {
-    const { email, password } = req.body;
+    const { email, password, role } = req.body;
 
-    if (!email || !password) {
+    if (!email || !password || !role) {
       return res.status(400).json({ 
         success: false, 
-        error: 'Email and password are required' 
+        error: 'Email, password, and role are required' 
       });
     }
 
@@ -66,6 +66,14 @@ router.post('/login', async (req, res) => {
       return res.status(401).json({ 
         success: false, 
         error: 'Invalid email or password' 
+      });
+    }
+
+    // Check if user role matches expected role
+    if (data.role !== role) {
+      return res.status(403).json({
+        success: false,
+        error: `Access denied. You are registered as a ${data.role}, not as a ${role}.`
       });
     }
 
