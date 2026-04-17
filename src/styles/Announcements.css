@@ -295,6 +295,16 @@
   color: #059669;
 }
 
+/* Deadlines Section */
+.deadlines-section .section-icon {
+  color: #dc2626;
+}
+
+.deadlines-section .count-badge {
+  background: #fee2e2;
+  color: #dc2626;
+}
+
 /* Scholarships Grid */
 .scholarships-grid {
   display: grid;
@@ -503,6 +513,86 @@
 .view-details-btn .btn-icon {
   width: 1rem;
   height: 1rem;
+}
+
+/* Loading State */
+.announcements-loading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 4rem 2rem;
+  background: white;
+  border-radius: 1rem;
+  border: 1px solid #e5e7eb;
+  margin-bottom: 1.5rem;
+}
+
+.announcements-loading .loading-spinner {
+  width: 3rem;
+  height: 3rem;
+  color: #0d9488;
+  animation: spin 1s linear infinite;
+  margin-bottom: 1rem;
+}
+
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.announcements-loading p {
+  color: #6b7280;
+  font-size: 1rem;
+}
+
+/* Error State */
+.announcements-error {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 4rem 2rem;
+  background: #fef2f2;
+  border-radius: 1rem;
+  border: 1px solid #fecaca;
+  margin-bottom: 1.5rem;
+}
+
+.announcements-error .error-icon {
+  width: 3rem;
+  height: 3rem;
+  color: #dc2626;
+  margin-bottom: 1rem;
+}
+
+.announcements-error .error-message {
+  color: #991b1b;
+  font-size: 1rem;
+  margin-bottom: 1rem;
+  text-align: center;
+}
+
+.announcements-error .retry-btn {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  background: #dc2626;
+  color: white;
+  border: none;
+  padding: 0.75rem 1.5rem;
+  border-radius: 0.5rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.announcements-error .retry-btn:hover {
+  background: #b91c1c;
 }
 
 /* Empty State */
