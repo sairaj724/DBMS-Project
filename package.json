@@ -4,7 +4,8 @@
   "version": "0.0.0",
   "type": "module",
   "scripts": {
-    "dev": "concurrently \"npm run backend\" \"vite\"",
+    "dev": "concurrently --kill-others --prefix-colors \"bgBlue,bgGreen\" \"npm run backend\" \"vite\"",
+    "stop": "npx kill-port 3001 5173 5174",
     "backend": "cd backend && npm run dev",
     "build": "vite build",
     "lint": "eslint .",
@@ -26,6 +27,7 @@
     "eslint-plugin-react-hooks": "^7.0.1",
     "eslint-plugin-react-refresh": "^0.5.2",
     "globals": "^17.4.0",
+    "kill-port": "^2.0.1",
     "vite": "^8.0.4"
   }
 }

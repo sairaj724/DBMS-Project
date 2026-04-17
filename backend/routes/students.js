@@ -93,4 +93,147 @@ router.get('/:id/applications', async (req, res) => {
   }
 });
 
+// Get student profile by user_id
+router.get('/user/:userId', async (req, res) => {
+  try {
+    const { data, error } = await supabase
+      .from('student_profile')
+      .select(`
+        *,
+        users:user_id (name, email)
+      `)
+      .eq('user_id', req.params.userId)
+      .single();
+
+    if (error) throw error;
+
+    if (!data) {
+      return res.status(404).json({ success: false, error: 'Student profile not found' });
+    }
+
+    const student = {
+      id: data.student_id,
+      user_id: data.user_id,
+      name: data.users?.name || 'Unknown',
+      course: data.course || '',
+      year: data.year_of_study || 1,
+      cgpa: data.cgpa || 0,
+      email: data.users?.email || '',
+      phone_no: data.phone_no || '',
+      gender: data.gender || '',
+      category: data.category || '',
+      income: data.income || 0,
+      hosteller: data.hosteller || false,
+      created_at: data.created_at,
+      updated_at: data.updated_at
+    };
+
+    res.json({ success: true, data: student });
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+// Update student profile by user_id
+router.put('/user/:userId', async (req, res) => {
+  try {
+    const { cgpa, income, category, gender, hosteller, course, phone_no, year_of_study } = req.body;
+
+    const { data, error } = await supabase
+      .from('student_profile')
+      .update({
+        cgpa,
+        income,
+        category,
+        gender,
+        hosteller,
+        course,
+        phone_no,
+        year_of_study,
+        updated_at: new Date().toISOString()
+      })
+      .eq('user_id', req.params.userId)
+      .select(`
+        *,
+        users:user_id (name, email)
+      `)
+      .single();
+
+    if (error) throw error;
+
+    if (!data) {
+      return res.status(404).json({ success: false, error: 'Student profile not found' });
+    }
+
+    const student = {
+      id: data.student_id,
+      user_id: data.user_id,
+      name: data.users?.name || 'Unknown',
+      course: data.course || '',
+      year: data.year_of_study || 1,
+      cgpa: data.cgpa || 0,
+      email: data.users?.email || '',
+      phone_no: data.phone_no || '',
+      gender: data.gender || '',
+      category: data.category || '',
+      income: data.income || 0,
+      hosteller: data.hosteller || false,
+      updated_at: data.updated_at
+    };
+
+    res.json({ success: true, data: student });
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+// Create student profile
+router.post('/user/:userId', async (req, res) => {
+  try {
+    const { cgpa, income, category, gender, hosteller, course, phone_no, year_of_study } = req.body;
+
+    const { data, error } = await supabase
+      .from('student_profile')
+      .insert({
+        user_id: req.params.userId,
+        cgpa,
+        income,
+        category,
+        gender,
+        hosteller,
+        course,
+        phone_no,
+        year_of_study
+      })
+      .select(`
+        *,
+        users:user_id (name, email)
+      `)
+      .single();
+
+    if (error) throw error;
+
+    const student = {
+      id: data.student_id,
+      user_id: data.user_id,
+      name: data.users?.name || 'Unknown',
+      course: data.course || '',
+      year: data.year_of_study || 1,
+      cgpa: data.cgpa || 0,
+      email: data.users?.email || '',
+      phone_no: data.phone_no || '',
+      gender: data.gender || '',
+      category: data.category || '',
+      income: data.income || 0,
+      hosteller: data.hosteller || false,
+      created_at: data.created_at,
+      updated_at: data.updated_at
+    };
+
+    res.json({ success: true, data: student });
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
 export default router;

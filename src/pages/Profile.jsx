@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   User,
   Mail,
@@ -14,36 +14,183 @@ import {
   CheckCircle,
   Upload,
   Camera,
+  Loader,
+  AlertCircle,
 } from "lucide-react";
+import { apiService } from "../services/api";
 import "../styles/Profile.css";
 
 function Profile({ user, onUpdateUser }) {
   const [isEditing, setIsEditing] = useState(false);
-  const [editedUser, setEditedUser] = useState({ ...user });
   const [activeTab, setActiveTab] = useState("personal");
+  const [profile, setProfile] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [saving, setSaving] = useState(false);
+  const [editedProfile, setEditedProfile] = useState({});
+
+  // Fetch profile data from database
+  useEffect(() => {
+    const fetchProfile = async () => {
+      if (!user?.user_id) {
+        setLoading(false);
+        return;
+      }
+
+      try {
+        setLoading(true);
+        setError(null);
+        const response = await apiService.getStudentProfileByUserId(user.user_id);
+        
+        if (response.success && response.data) {
+          setProfile(response.data);
+          setEditedProfile(response.data);
+        } else {
+          // Profile doesn't exist yet, create default profile
+          const defaultProfile = {
+            user_id: user.user_id,
+            name: user.name || '',
+            email: user.email || '',
+            course: '',
+            year: 1,
+            cgpa: 0,
+            phone_no: '',
+            gender: '',
+            category: '',
+            income: 0,
+            hosteller: false,
+          };
+          setProfile(defaultProfile);
+          setEditedProfile(defaultProfile);
+        }
+      } catch (err) {
+        // Profile not found, create default
+        const defaultProfile = {
+          user_id: user.user_id,
+          name: user.name || '',
+          email: user.email || '',
+          course: '',
+          year: 1,
+          cgpa: 0,
+          phone_no: '',
+          gender: '',
+          category: '',
+          income: 0,
+          hosteller: false,
+        };
+        setProfile(defaultProfile);
+        setEditedProfile(defaultProfile);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchProfile();
+  }, [user?.user_id]);
 
   const handleChange = (e) => {
-    const { name, value } = e.target;
-    setEditedUser({ ...editedUser, [name]: value });
+    const { name, value, type, checked } = e.target;
+    setEditedProfile({ 
+      ...editedProfile, 
+      [name]: type === 'checkbox' ? checked : value 
+    });
   };
 
-  const handleSave = () => {
-    onUpdateUser(editedUser);
-    setIsEditing(false);
+  const handleSave = async () => {
+    if (!user?.user_id) return;
+
+    try {
+      setSaving(true);
+      setError(null);
+
+      const profileData = {
+        cgpa: parseFloat(editedProfile.cgpa) || 0,
+        income: parseFloat(editedProfile.income) || 0,
+        category: editedProfile.category || '',
+        gender: (editedProfile.gender || '').toLowerCase(),
+        hosteller: editedProfile.hosteller || false,
+        course: editedProfile.course || '',
+        phone_no: editedProfile.phone_no || '',
+        year_of_study: parseInt(editedProfile.year) || 1,
+      };
+
+      let response;
+      if (profile?.id) {
+        // Update existing profile
+        response = await apiService.updateStudentProfile(user.user_id, profileData);
+      } else {
+        // Create new profile
+        response = await apiService.createStudentProfile(user.user_id, profileData);
+      }
+
+      if (response.success) {
+        setProfile(response.data);
+        setEditedProfile(response.data);
+        setIsEditing(false);
+        
+        // Update parent component
+        if (onUpdateUser) {
+          onUpdateUser({
+            ...user,
+            ...response.data,
+          });
+        }
+      }
+    } catch (err) {
+      setError(err.message || 'Failed to save profile');
+    } finally {
+      setSaving(false);
+    }
   };
 
   const handleCancel = () => {
-    setEditedUser({ ...user });
+    setEditedProfile({ ...profile });
     setIsEditing(false);
+    setError(null);
   };
 
   const documentStatus = [
     { name: "Income Certificate", key: "incomeCertificate", required: true },
-    { name: "Caste Certificate", key: "casteCertificate", required: user.caste !== "OPEN" },
+    { name: "Caste Certificate", key: "casteCertificate", required: (profile?.category || '') !== "General" },
     { name: "Marksheet", key: "marksheet", required: true },
     { name: "Bonafide Certificate", key: "bonafide", required: true },
     { name: "Bank Passbook", key: "bankPassbook", required: true },
   ];
+
+  // Loading state
+  if (loading) {
+    return (
+      <div className="profile-page">
+        <div className="page-header">
+          <h1>My Profile</h1>
+          <p>Manage your personal information and documents</p>
+        </div>
+        <div className="profile-loading">
+          <Loader className="loading-spinner" />
+          <p>Loading profile...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Error state
+  if (error) {
+    return (
+      <div className="profile-page">
+        <div className="page-header">
+          <h1>My Profile</h1>
+          <p>Manage your personal information and documents</p>
+        </div>
+        <div className="profile-error">
+          <AlertCircle className="error-icon" />
+          <p>Error: {error}</p>
+          <button onClick={() => window.location.reload()} className="btn-retry">
+            Retry
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="profile-page">
@@ -66,19 +213,19 @@ function Profile({ user, onUpdateUser }) {
                   <Camera className="upload-icon" />
                 </button>
               </div>
-              <h3 className="profile-name">{user.name}</h3>
-              <p className="profile-id">{user.rollNumber}</p>
-              <span className="profile-badge">{user.department}</span>
+              <h3 className="profile-name">{profile?.name || user?.name || 'Unknown'}</h3>
+              <p className="profile-id">{user?.user_id?.slice(0, 8) || 'No ID'}</p>
+              <span className="profile-badge">{profile?.course || 'No Course'}</span>
             </div>
 
             <div className="profile-quick-info">
               <div className="quick-info-item">
                 <Mail className="info-icon" />
-                <span>{user.email}</span>
+                <span>{profile?.email || user?.email || 'No Email'}</span>
               </div>
               <div className="quick-info-item">
                 <Phone className="info-icon" />
-                <span>{user.phone}</span>
+                <span>{profile?.phone_no || 'No Phone'}</span>
               </div>
               <div className="quick-info-item">
                 <MapPin className="info-icon" />
@@ -139,9 +286,9 @@ function Profile({ user, onUpdateUser }) {
               <div className="action-buttons">
                 {isEditing ? (
                   <>
-                    <button className="btn-save" onClick={handleSave}>
-                      <Save className="btn-icon" />
-                      Save Changes
+                    <button className="btn-save" onClick={handleSave} disabled={saving}>
+                      {saving ? <Loader className="btn-icon spinner" /> : <Save className="btn-icon" />}
+                      {saving ? 'Saving...' : 'Save Changes'}
                     </button>
                     <button className="btn-cancel" onClick={handleCancel}>
                       <X className="btn-icon" />
@@ -168,11 +315,12 @@ function Profile({ user, onUpdateUser }) {
                     <input
                       type="text"
                       name="name"
-                      value={editedUser.name}
+                      value={editedProfile.name || ''}
                       onChange={handleChange}
+                      disabled
                     />
                   ) : (
-                    <p>{user.name}</p>
+                    <p>{profile?.name || user?.name || 'N/A'}</p>
                   )}
                 </div>
 
@@ -182,11 +330,12 @@ function Profile({ user, onUpdateUser }) {
                     <input
                       type="email"
                       name="email"
-                      value={editedUser.email}
+                      value={editedProfile.email || ''}
                       onChange={handleChange}
+                      disabled
                     />
                   ) : (
-                    <p>{user.email}</p>
+                    <p>{profile?.email || user?.email || 'N/A'}</p>
                   )}
                 </div>
 
@@ -195,12 +344,13 @@ function Profile({ user, onUpdateUser }) {
                   {isEditing ? (
                     <input
                       type="tel"
-                      name="phone"
-                      value={editedUser.phone}
+                      name="phone_no"
+                      value={editedProfile.phone_no || ''}
                       onChange={handleChange}
+                      placeholder="Enter phone number"
                     />
                   ) : (
-                    <p>{user.phone}</p>
+                    <p>{profile?.phone_no || 'N/A'}</p>
                   )}
                 </div>
 
@@ -210,11 +360,12 @@ function Profile({ user, onUpdateUser }) {
                     <input
                       type="date"
                       name="dob"
-                      value={editedUser.dob}
+                      value={editedProfile.dob || ''}
                       onChange={handleChange}
+                      disabled
                     />
                   ) : (
-                    <p>{new Date(user.dob).toLocaleDateString()}</p>
+                    <p>{profile?.dob ? new Date(profile.dob).toLocaleDateString() : 'N/A'}</p>
                   )}
                 </div>
 
@@ -223,15 +374,16 @@ function Profile({ user, onUpdateUser }) {
                   {isEditing ? (
                     <select
                       name="gender"
-                      value={editedUser.gender}
+                      value={editedProfile.gender || ''}
                       onChange={handleChange}
                     >
-                      <option value="Male">Male</option>
-                      <option value="Female">Female</option>
-                      <option value="Other">Other</option>
+                      <option value="">Select Gender</option>
+                      <option value="male">Male</option>
+                      <option value="female">Female</option>
+                      <option value="other">Other</option>
                     </select>
                   ) : (
-                    <p>{user.gender}</p>
+                    <p>{profile?.gender ? profile.gender.charAt(0).toUpperCase() + profile.gender.slice(1) : 'N/A'}</p>
                   )}
                 </div>
 
@@ -239,20 +391,22 @@ function Profile({ user, onUpdateUser }) {
                   <label>Caste Category</label>
                   {isEditing ? (
                     <select
-                      name="caste"
-                      value={editedUser.caste}
+                      name="category"
+                      value={editedProfile.category || ''}
                       onChange={handleChange}
                     >
-                      <option value="OPEN">OPEN</option>
+                      <option value="">Select Category</option>
+                      <option value="General">General</option>
                       <option value="SC">SC</option>
                       <option value="ST">ST</option>
                       <option value="OBC">OBC</option>
                       <option value="NT">NT</option>
-                      <option value="VJNT">VJNT</option>
+                      <option value="VJ">VJ</option>
+                      <option value="SBC">SBC</option>
                       <option value="EWS">EWS</option>
                     </select>
                   ) : (
-                    <p>{user.caste}</p>
+                    <p>{profile?.category || 'N/A'}</p>
                   )}
                 </div>
 
@@ -261,12 +415,14 @@ function Profile({ user, onUpdateUser }) {
                   {isEditing ? (
                     <textarea
                       name="address"
-                      value={editedUser.address}
+                      value={editedProfile.address || ''}
                       onChange={handleChange}
                       rows="3"
+                      placeholder="Enter your address"
+                      disabled
                     />
                   ) : (
-                    <p>{user.address}</p>
+                    <p>{profile?.address || 'N/A'}</p>
                   )}
                 </div>
               </div>
@@ -285,11 +441,13 @@ function Profile({ user, onUpdateUser }) {
                     <input
                       type="number"
                       name="income"
-                      value={editedUser.income}
+                      value={editedProfile.income || 0}
                       onChange={handleChange}
+                      min="0"
+                      placeholder="Annual family income"
                     />
                   ) : (
-                    <p>₹{user.income.toLocaleString()}</p>
+                    <p>₹{(profile?.income || 0).toLocaleString()}</p>
                   )}
                 </div>
               </div>
@@ -302,17 +460,18 @@ function Profile({ user, onUpdateUser }) {
               <div className="info-grid">
                 <div className="info-group">
                   <label>Roll Number</label>
-                  <p>{user.rollNumber}</p>
+                  <p>{profile?.id?.slice(0, 8) || 'N/A'}</p>
                 </div>
 
                 <div className="info-group">
                   <label>Department</label>
                   {isEditing ? (
                     <select
-                      name="department"
-                      value={editedUser.department}
+                      name="course"
+                      value={editedProfile.course || ''}
                       onChange={handleChange}
                     >
+                      <option value="">Select Course</option>
                       <option value="Computer Engineering">Computer Engineering</option>
                       <option value="IT Engineering">IT Engineering</option>
                       <option value="Electronics Engineering">Electronics Engineering</option>
@@ -323,7 +482,7 @@ function Profile({ user, onUpdateUser }) {
                       <option value="Textile Engineering">Textile Engineering</option>
                     </select>
                   ) : (
-                    <p>{user.department}</p>
+                    <p>{profile?.course || 'N/A'}</p>
                   )}
                 </div>
 
@@ -332,7 +491,7 @@ function Profile({ user, onUpdateUser }) {
                   {isEditing ? (
                     <select
                       name="year"
-                      value={editedUser.year}
+                      value={editedProfile.year || 1}
                       onChange={handleChange}
                     >
                       <option value={1}>First Year</option>
@@ -341,7 +500,7 @@ function Profile({ user, onUpdateUser }) {
                       <option value={4}>Fourth Year</option>
                     </select>
                   ) : (
-                    <p>Year {user.year}</p>
+                    <p>Year {profile?.year || 1}</p>
                   )}
                 </div>
 
@@ -354,11 +513,12 @@ function Profile({ user, onUpdateUser }) {
                       min="0"
                       max="10"
                       name="cgpa"
-                      value={editedUser.cgpa}
+                      value={editedProfile.cgpa || 0}
                       onChange={handleChange}
+                      placeholder="Enter CGPA (0-10)"
                     />
                   ) : (
-                    <p className="highlight-value">{user.cgpa}</p>
+                    <p className="highlight-value">{profile?.cgpa || 'N/A'}</p>
                   )}
                 </div>
               </div>
@@ -390,11 +550,11 @@ function Profile({ user, onUpdateUser }) {
                 {documentStatus.map((doc) => (
                   <div
                     key={doc.key}
-                    className={`document-item ${user.documents[doc.key] ? "uploaded" : "missing"}`}
+                    className={`document-item ${user?.documents?.[doc.key] ? "uploaded" : "missing"}`}
                   >
                     <div className="document-info">
                       <div className="document-icon-wrapper">
-                        {user.documents[doc.key] ? (
+                        {user?.documents?.[doc.key] ? (
                           <CheckCircle className="document-icon success" />
                         ) : (
                           <Upload className="document-icon" />
@@ -408,10 +568,10 @@ function Profile({ user, onUpdateUser }) {
                       </div>
                     </div>
                     <div className="document-status">
-                      {user.documents[doc.key] ? (
+                      {user?.documents?.[doc.key] ? (
                         <span className="status-badge verified">Verified</span>
                       ) : (
-                        <button className="upload-btn">
+                        <button className="upload-btn" disabled>
                           <Upload className="btn-icon" />
                           Upload
                         </button>

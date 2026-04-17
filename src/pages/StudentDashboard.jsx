@@ -21,19 +21,36 @@ function StudentDashboard({ user }) {
   const navigate = useNavigate();
   const [scholarships, setScholarships] = useState([]);
   const [applications, setApplications] = useState([]);
+  const [userProfile, setUserProfile] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  // Fetch scholarships and applications
+  // Fetch scholarships, applications, and user profile
   useEffect(() => {
     const fetchData = async () => {
       try {
         setLoading(true);
-        const [scholarshipsRes, applicationsRes] = await Promise.all([
+        
+        // Fetch all data in parallel
+        const promises = [
           apiService.getScholarships(),
           user?.user_id ? apiService.getApplications() : Promise.resolve({ data: [] })
-        ]);
+        ];
+        
+        // Also fetch user profile if logged in
+        if (user?.user_id) {
+          promises.push(
+            apiService.getStudentProfileByUserId(user.user_id).catch(() => ({ success: false }))
+          );
+        }
+        
+        const [scholarshipsRes, applicationsRes, profileRes] = await Promise.all(promises);
 
+        // Set user profile if fetched successfully
+        if (profileRes?.success) {
+          setUserProfile(profileRes.data);
+        }
+        
         if (scholarshipsRes.success) {
           // Transform scholarships to match frontend format
           const transformedScholarships = scholarshipsRes.data.map(s => ({
@@ -48,10 +65,11 @@ function StudentDashboard({ user }) {
             eligibility: {
               minCgpa: s.min_cgpa || 0,
               maxIncome: s.max_income || 10000000,
-              caste: s.category === "ALL" ? ["All"] : s.category ? [s.category] : ["All"],
+              category: s.category === "ALL" ? ["All"] : s.category ? [s.category] : ["All"],
               departments: ["All"],
               year: [1, 2, 3, 4],
-              gender: s.gender || "all"
+              gender: s.gender || "all",
+              hosteller: s.hosteller
             }
           }));
           setScholarships(transformedScholarships);
@@ -97,13 +115,45 @@ function StudentDashboard({ user }) {
       return sum + (scholarship?.amount || 0);
     }, 0);
 
+  // Get student data for eligibility (profile or user)
+  const studentData = userProfile || user;
+  const studentCgpa = parseFloat(studentData?.cgpa) || 0;
+  const studentIncome = parseFloat(studentData?.income) || 0;
+  const studentCategory = studentData?.category || studentData?.caste || "";
+  const studentGender = (studentData?.gender || "").toLowerCase();
+  const studentYear = parseInt(studentData?.year) || parseInt(studentData?.year_of_study) || 1;
+  const studentHosteller = studentData?.hosteller || false;
+  
   // Get eligible scholarships count
   const eligibleScholarships = scholarships.filter((s) => {
-    return (
-      user?.cgpa >= s.eligibility.minCgpa &&
-      user?.income <= s.eligibility.maxIncome &&
-      (s.eligibility.caste.includes(user?.caste) || s.eligibility.caste.includes("All"))
-    );
+    const minCgpa = parseFloat(s.eligibility?.minCgpa) || 0;
+    const maxIncome = parseFloat(s.eligibility?.maxIncome) || 10000000;
+    const allowedCategories = s.eligibility?.category || s.eligibility?.caste || ["All"];
+    const scholarshipGender = (s.eligibility?.gender || "all").toLowerCase();
+    const allowedYears = s.eligibility?.year || [1, 2, 3, 4];
+    
+    // Check CGPA
+    if (studentCgpa < minCgpa) return false;
+    
+    // Check Income
+    if (studentIncome > maxIncome) return false;
+    
+    // Check Category
+    const categoryMatch = allowedCategories.includes("All") || 
+                          allowedCategories.includes(studentCategory) ||
+                          allowedCategories.some(cat => cat.toLowerCase() === studentCategory.toLowerCase());
+    if (!categoryMatch && studentCategory) return false;
+    
+    // Check Gender
+    if (scholarshipGender !== "all" && scholarshipGender !== studentGender && studentGender) return false;
+    
+    // Check Year
+    if (!allowedYears.includes(studentYear)) return false;
+    
+    // Check Hosteller requirement
+    if (s.eligibility?.hosteller === true && !studentHosteller) return false;
+    
+    return true;
   }).length;
 
   // Get upcoming deadlines (next 30 days)
@@ -134,7 +184,7 @@ function StudentDashboard({ user }) {
         <div className="welcome-section">
           <h1>Welcome, {user.name}!</h1>
           <p>
-            {user.department} • Year {user.year} • Roll No: {user.rollNumber}
+            {userProfile?.course || user?.department || 'No Department'} • Year {studentYear} • Roll No: {user?.user_id?.slice(0, 8)}
           </p>
         </div>
         <div className="quick-actions">
@@ -262,15 +312,15 @@ function StudentDashboard({ user }) {
             <div className="profile-stats">
               <div className="profile-stat">
                 <span className="stat-label">CGPA</span>
-                <span className="stat-value highlight">{user.cgpa}</span>
+                <span className="stat-value highlight">{studentCgpa || 'N/A'}</span>
               </div>
               <div className="profile-stat">
                 <span className="stat-label">Year</span>
-                <span className="stat-value">{user.year}rd Year</span>
+                <span className="stat-value">{studentYear}{studentYear === 1 ? 'st' : studentYear === 2 ? 'nd' : studentYear === 3 ? 'rd' : 'th'} Year</span>
               </div>
               <div className="profile-stat">
                 <span className="stat-label">Department</span>
-                <span className="stat-value">{user.department}</span>
+                <span className="stat-value">{userProfile?.course || user?.department || 'N/A'}</span>
               </div>
             </div>
             <button className="card-action-btn" onClick={() => navigate("/profile")}>

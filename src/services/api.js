@@ -163,6 +163,24 @@ class ApiService {
     return this.request(`/students/${studentId}/applications`);
   }
 
+  async getStudentProfileByUserId(userId) {
+    return this.request(`/students/user/${userId}`);
+  }
+
+  async createStudentProfile(userId, profileData) {
+    return this.request(`/students/user/${userId}`, {
+      method: 'POST',
+      body: JSON.stringify(profileData),
+    });
+  }
+
+  async updateStudentProfile(userId, profileData) {
+    return this.request(`/students/user/${userId}`, {
+      method: 'PUT',
+      body: JSON.stringify(profileData),
+    });
+  }
+
   // Users API - Authentication
   async registerUser(userData) {
     return this.request('/users/register', {
