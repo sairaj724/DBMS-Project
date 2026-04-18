@@ -35,7 +35,7 @@ router.get('/', async (req, res) => {
       const { data, error } = await supabase
         .from('student_profile')
         .select('student_id, user_id, course, phone_no, users(name, email)');
-      
+
       if (error) throw error;
       studentProfiles = data;
     } catch (err) {
@@ -58,6 +58,8 @@ router.get('/', async (req, res) => {
         ...app,
         scholarships: scholarshipMap[app.scholarship_id] || null,
         student_profile: {
+          student_id: app.student_id,
+          user_id: studentData?.user_id,
           first_name: studentData?.users?.name?.split(' ')[0] || 'Student',
           last_name: studentData?.users?.name?.split(' ').slice(1).join(' ') || 'Unknown',
           name: studentData?.users?.name || 'Unknown',
@@ -268,7 +270,7 @@ router.put('/:id', async (req, res) => {
     }
 
     // Create notification for student
-    const statusMessage = status === 'approved' 
+    const statusMessage = status === 'approved'
       ? `Congratulations! Your application for ${scholarship.name} has been approved.`
       : `Your application for ${scholarship.name} has been ${status}.`;
 
