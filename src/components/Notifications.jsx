@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Bell, CheckCircle, X, AlertCircle } from 'lucide-react';
+import { Bell, CheckCircle, X, AlertCircle, MessageSquare } from 'lucide-react';
 import { apiService } from '../services/api';
 import '../styles/Notifications.css';
 
@@ -46,7 +46,7 @@ const Notifications = ({ userId, isAdmin }) => {
   const markAsRead = async (notificationId) => {
     try {
       await apiService.markNotificationAsRead(notificationId);
-      setNotifications(notifications.map(n => 
+      setNotifications(notifications.map(n =>
         n.notification_id === notificationId ? { ...n, read_status: true } : n
       ));
       setUnreadCount(Math.max(0, unreadCount - 1));
@@ -69,7 +69,7 @@ const Notifications = ({ userId, isAdmin }) => {
     const date = new Date(dateString);
     const now = new Date();
     const diffInHours = (now - date) / (1000 * 60 * 60);
-    
+
     if (diffInHours < 1) return 'Just now';
     if (diffInHours < 24) return `${Math.floor(diffInHours)}h ago`;
     if (diffInHours < 48) return 'Yesterday';
@@ -81,10 +81,10 @@ const Notifications = ({ userId, isAdmin }) => {
     if (!notification.read_status) {
       await markAsRead(notification.notification_id);
     }
-    
+
     // Close dropdown
     setIsOpen(false);
-    
+
     // Navigate based on user role and notification type
     if (isAdmin) {
       // Admin notifications - go to applications page
@@ -103,7 +103,7 @@ const Notifications = ({ userId, isAdmin }) => {
 
   return (
     <div className="notifications-container">
-      <button 
+      <button
         className="notification-bell"
         onClick={() => setIsOpen(!isOpen)}
       >
@@ -118,7 +118,7 @@ const Notifications = ({ userId, isAdmin }) => {
           <div className="notifications-header">
             <h3>Notifications</h3>
             {unreadCount > 0 && (
-              <button 
+              <button
                 className="mark-all-read"
                 onClick={markAllAsRead}
               >
@@ -137,7 +137,7 @@ const Notifications = ({ userId, isAdmin }) => {
               </div>
             ) : (
               notifications.map(notification => (
-                <div 
+                <div
                   key={notification.notification_id}
                   className={`notification-item ${!notification.read_status ? 'unread' : ''}`}
                   onClick={() => handleNotificationClick(notification)}
@@ -145,6 +145,8 @@ const Notifications = ({ userId, isAdmin }) => {
                   <div className="notification-icon">
                     {notification.notification_type === 'application' ? (
                       <CheckCircle size={16} className="icon-success" />
+                    ) : notification.notification_type === 'admin_remark' ? (
+                      <MessageSquare size={16} className="icon-warning" />
                     ) : (
                       <AlertCircle size={16} className="icon-info" />
                     )}

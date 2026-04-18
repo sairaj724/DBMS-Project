@@ -148,6 +148,10 @@
   color: #3b82f6;
 }
 
+.icon-warning {
+  color: #f59e0b;
+}
+
 .notification-content {
   flex: 1;
   min-width: 0;
