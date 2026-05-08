@@ -463,7 +463,7 @@ router.get('/certificate/:applicationId', async (req, res) => {
 
     // Launch puppeteer
     browser = await puppeteer.launch({
-      executablePath: "C:/Program Files/Google/Chrome/Application/chrome.exe",
+      // executablePath: "C:/Program Files/Google/Chrome/Application/chrome.exe",
       headless: true,
       args: [
         '--no-sandbox',
