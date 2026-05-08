@@ -12,6 +12,7 @@ import {
   BookOpen,
   DollarSign,
   Loader2,
+  Download,
 } from "lucide-react";
 import { apiService } from "../services/api";
 import StatusTracker from "../components/StatusTracker";
@@ -24,6 +25,7 @@ function StudentDashboard({ user }) {
   const [userProfile, setUserProfile] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [generatingCertificate, setGeneratingCertificate] = useState(null); // Application ID being processed
 
   // Fetch scholarships, applications, and user profile
   useEffect(() => {
@@ -129,6 +131,44 @@ function StudentDashboard({ user }) {
 
     fetchData();
   }, [user?.user_id, userProfile?.id]);
+
+  // Handle certificate generation for approved scholarships
+  const handleGenerateCertificate = async (application) => {
+    if (application.status !== 'Approved') {
+      alert('Certificate is only available for approved scholarships');
+      return;
+    }
+
+    try {
+      setGeneratingCertificate(application.id);
+      console.log('Generating certificate for application:', application.id);
+
+      // Fetch the raw application ID from the original data
+      const { data } = await apiService.getApplications();
+      const rawApp = data?.find(app => app.application_id === application.id || app.id === application.id);
+      const appId = rawApp?.application_id || application.id;
+
+      const pdfBlob = await apiService.generateScholarshipCertificate(appId);
+      const filename = `scholarship-certificate-${application.id}.pdf`;
+
+      // Download the PDF
+      const url = window.URL.createObjectURL(pdfBlob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.setAttribute('download', filename);
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.URL.revokeObjectURL(url);
+
+      alert('Certificate generated successfully!');
+    } catch (err) {
+      console.error('Error generating certificate:', err);
+      alert('Failed to generate certificate: ' + (err.message || 'Unknown error'));
+    } finally {
+      setGeneratingCertificate(null);
+    }
+  };
 
   // Calculate stats
   const totalApplied = applications.length;
@@ -317,6 +357,20 @@ function StudentDashboard({ user }) {
                         timeline={app.timeline}
                         issues={app.issues || []}
                       />
+                      {app.status === 'Approved' && (
+                        <button
+                          className="certificate-btn"
+                          onClick={() => handleGenerateCertificate(app)}
+                          disabled={generatingCertificate === app.id}
+                        >
+                          {generatingCertificate === app.id ? (
+                            <Loader2 className="btn-icon loading" />
+                          ) : (
+                            <Download className="btn-icon" />
+                          )}
+                          {generatingCertificate === app.id ? 'Generating...' : 'Generate Certificate'}
+                        </button>
+                      )}
                     </div>
                   </div>
                 );

@@ -236,6 +236,24 @@ class ApiService {
     // Return blob for PDF download
     return response.blob();
   }
+
+  // Scholarship Certificate API - Generate certificate for approved scholarship
+  async generateScholarshipCertificate(applicationId) {
+    const response = await fetch(`${API_BASE_URL}/reports/certificate/${applicationId}`, {
+      method: 'GET',
+      headers: {
+        'Accept': 'application/pdf',
+      },
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({ error: 'Failed to generate certificate' }));
+      throw new Error(errorData.error || 'Failed to generate certificate');
+    }
+
+    // Return blob for PDF download
+    return response.blob();
+  }
 }
 
 export const apiService = new ApiService();
