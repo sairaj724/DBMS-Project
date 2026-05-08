@@ -188,6 +188,11 @@
   color: #7c3aed;
 }
 
+.quick-action-card.orange .action-icon-wrapper {
+  background: #ffedd5;
+  color: #ea580c;
+}
+
 .action-icon {
   width: 1.5rem;
   height: 1.5rem;

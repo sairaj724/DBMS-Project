@@ -16,6 +16,7 @@ import AdminDashboard from "./pages/AdminDashboard";
 import AdminScholarships from "./pages/AdminScholarships";
 import AdminApplications from "./pages/AdminApplications";
 import AdminStudents from "./pages/AdminStudents";
+import AdminReports from "./pages/AdminReports";
 
 // Dummy data for initial state
 import { currentStudent, adminUser } from "./data/dummyData";
@@ -175,6 +176,15 @@ function App() {
                             element={
                                 <ProtectedRoute user={user} isAdmin={isAdmin} requireAdmin={true}>
                                     <AdminStudents />
+                                </ProtectedRoute>
+                            }
+                        />
+
+                        <Route
+                            path="/admin/reports"
+                            element={
+                                <ProtectedRoute user={user} isAdmin={isAdmin} requireAdmin={true}>
+                                    <AdminReports />
                                 </ProtectedRoute>
                             }
                         />

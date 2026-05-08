@@ -217,6 +217,25 @@ class ApiService {
   async getUser(id) {
     return this.request(`/users/${id}`);
   }
+
+  // Reports API - Generate PDF reports
+  async generateReport(reportType, dateRange) {
+    const response = await fetch(`${API_BASE_URL}/reports/generate`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ type: reportType, dateRange: dateRange }),
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({ error: 'Failed to generate report' }));
+      throw new Error(errorData.error || 'Failed to generate report');
+    }
+
+    // Return blob for PDF download
+    return response.blob();
+  }
 }
 
 export const apiService = new ApiService();

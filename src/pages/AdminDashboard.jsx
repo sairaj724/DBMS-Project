@@ -165,6 +165,13 @@ function AdminDashboard({ admin }) {
       action: () => navigate("/admin/students"),
       color: "purple",
     },
+    {
+      title: "Generate Reports",
+      description: "Download PDF reports and statistics",
+      icon: FileText,
+      action: () => navigate("/admin/reports"),
+      color: "orange",
+    },
   ];
 
   return (
